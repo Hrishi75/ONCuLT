@@ -1,4 +1,4 @@
-# MerchMart
+# DefiMart
 A social e-commerce platform for showcasing, buying, and selling event-based merchandise in the Ethereum ecosystem.
 
 This project is a social e-commerce platform built specifically for the Ethereum ecosystem, focused on conferences, meetups, and community events. Many Ethereum events distribute exclusive merchandise such as T-shirts, badges, NFTs, and limited collectibles, but once the event ends, these items lose visibility and have no dedicated place to be showcased or traded. At the same time, many community members are unable to attend events due to location, cost, or time constraints and miss out on both the experience and the merchandise.
