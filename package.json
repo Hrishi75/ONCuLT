@@ -1,0 +1,28 @@
+{
+  "name": "oncult",
+  "version": "1.0.0",
+  "description": "OnCuLT is an Ethereum-native social commerce and payout platform that lets live events turn merchandise and collectibles into persistent, tradable assets with automated global revenue splits.",
+  "workspaces": [
+     "apps/*",
+     "packages/*"
+  ],
+  "scripts": {
+    "dev": "turbo dev",
+    "build": "turbo build",
+    "lint": "turbo lint"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Hrishi75/ONCuLT.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+
+  "devDependencies": {
+    "turbo": "^2.0.0"
+  },
+  
+  "homepage": "https://github.com/Hrishi75/ONCuLT#readme"
+}
