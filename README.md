@@ -1,6 +1,14 @@
-# DefiMart
-A social e-commerce platform for showcasing, buying, and selling event-based merchandise in the Ethereum ecosystem.
+# OnCuLT
+OnCuLT is a social e-commerce and programmable payout platform for live experiences, built entirely on the Ethereum ecosystem.
 
-This project is a social e-commerce platform built specifically for the Ethereum ecosystem, focused on conferences, meetups, and community events. Many Ethereum events distribute exclusive merchandise such as T-shirts, badges, NFTs, and limited collectibles, but once the event ends, these items lose visibility and have no dedicated place to be showcased or traded. At the same time, many community members are unable to attend events due to location, cost, or time constraints and miss out on both the experience and the merchandise.
-The platform solves this by combining social features with a marketplace. Users can create profiles, showcase the items they collected at Ethereum events, post updates to a social feed, and list merchandise or collectibles for sale directly from their profiles or posts. Other users can explore event-based collections, discover what attendees received, and purchase items using Ethereum wallet authentication and on-chain transactions.
-Event hosts can also showcase official merchandise, run limited drops, and extend engagement beyond the event itself. The long-term vision is to evolve this into an interactive ecosystem with peer-to-peer trading, event check-ins, and gamified collectibles that strengthen Ethereum community culture and digital ownership.
+Live events—such as conferences, meetups, concerts, and community gatherings—generate culture, identity, and commerce, but once the event ends, merchandise, collectibles, and revenue flows become fragmented or disappear entirely. Fans lose visibility into what was created, creators lose long-term monetization opportunities, and payouts across collaborators remain manual and opaque.
+
+Our platform solves this by combining social profiles, a marketplace, and an on-chain payout layer, all powered by Ethereum smart contracts and wallets. Users can create Ethereum-native profiles, showcase collectibles and merchandise received at events, post updates to a social feed, and list items for sale directly from their profiles or posts. Other users can explore event-based collections, discover what attendees received, and purchase items through secure, on-chain transactions.
+
+Event hosts and organizers can launch official merchandise, run limited or exclusive drops, and continue engaging their audience long after the event ends. Artists, creators, or designers can contribute their own merchandise to events and automatically receive revenue shares and royalties. Fans—whether they attended in person or remotely—can participate in event culture through ownership, trading, and discovery.
+
+All payments are handled through Ethereum-based stablecoins and a programmable payout system that supports automatic revenue splits, royalties, and backend rules for collaborators, sponsors, or managers. This allows instant, transparent, and trust-minimized global settlements without requiring recipients to have deep crypto knowledge.
+
+While the platform launches with Ethereum events as its initial focus, the same Ethereum-native infrastructure naturally extends to the broader entertainment industry—including music, sports, and creator-led experiences—using the same primitives for identity, ownership, commerce, and payouts.
+
+By leveraging Ethereum’s programmable money and digital ownership, the platform transforms live experiences into persistent, tradable, and monetizable ecosystems that strengthen community culture, creator economies, and global participation.
