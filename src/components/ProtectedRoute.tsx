@@ -14,7 +14,7 @@ export default function ProtectedRoute({ children }: Props) {
 
   useEffect(() => {
     if (!isConnected && !toastShown.current) {
-      toast.error("Please connect your wallet to access Events")
+      toast.error("Please connect your wallet to access Payout")
       toastShown.current = true
     }
   }, [isConnected])
