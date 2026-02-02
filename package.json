@@ -1,28 +1,45 @@
 {
   "name": "oncult",
-  "version": "1.0.0",
-  "description": "OnCuLT is an Ethereum-native social commerce and payout platform that lets live events turn merchandise and collectibles into persistent, tradable assets with automated global revenue splits.",
-  "workspaces": [
-     "apps/*",
-     "packages/*"
-  ],
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
   "scripts": {
-    "dev": "turbo dev",
-    "build": "turbo build",
-    "lint": "turbo lint"
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "eslint .",
+    "preview": "vite preview"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/Hrishi75/ONCuLT.git"
+  "dependencies": {
+    "@radix-ui/react-slot": "^1.2.4",
+    "@rainbow-me/rainbowkit": "^2.1.6",
+    "@supabase/supabase-js": "^2.93.3",
+    "@tanstack/react-query": "^5.59.0",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "framer-motion": "^12.29.2",
+    "lucide-react": "^0.563.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "tailwind-merge": "^3.4.0",
+    "viem": "^2.17.3",
+    "wagmi": "^2.14.1",
+    "zustand": "^5.0.11"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
-
   "devDependencies": {
-    "turbo": "^2.0.0"
-  },
-  
-  "homepage": "https://github.com/Hrishi75/ONCuLT#readme"
+    "@eslint/js": "^9.39.1",
+    "@types/node": "^24.10.1",
+    "@types/react": "^19.2.5",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.1.1",
+    "autoprefixer": "^10.4.24",
+    "eslint": "^9.39.1",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "eslint-plugin-react-refresh": "^0.4.24",
+    "globals": "^16.5.0",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^3.4.1",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.46.4",
+    "vite": "^7.2.4"
+  }
 }
