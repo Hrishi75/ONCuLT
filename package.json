@@ -20,6 +20,8 @@
     "lucide-react": "^0.563.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-hot-toast": "^2.6.0",
+    "react-router-dom": "^6.30.3",
     "tailwind-merge": "^3.4.0",
     "viem": "^2.17.3",
     "wagmi": "^2.14.1",
