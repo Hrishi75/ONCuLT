@@ -9,11 +9,12 @@ import Payout from "./app/routes/Payout"
 
 
 
+
 export default function App() {
   return (
     <>
       <FloatingNavbar />
-
+      
       <Routes>
         <Route path="/" element={<Home />} />
 

@@ -1,189 +1,329 @@
 import { useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
+import { useAccount } from "wagmi"
+
+/* ================= TYPES ================= */
+
+type EditionType = "open" | "limited" | "extra-limited"
 
 type Item = {
   id: string
   name: string
   price: string
   event: string
-  limited: boolean
+  description: string
+  edition: EditionType
   supply?: number
+  owner: string
 }
 
-const ITEMS: Item[] = [
+/* ================= INITIAL ITEMS ================= */
+
+const INITIAL_ITEMS: Item[] = [
   {
     id: "hoodie-eth",
     name: "ETH Conf Hoodie",
     price: "0.05 ETH",
     event: "ETH Conference 2026",
-    limited: true,
+    description: "Official ETH Conf 2026 hoodie",
+    edition: "limited",
     supply: 200,
-  },
-  {
-    id: "badge-nft",
-    name: "Genesis NFT Badge",
-    price: "Free",
-    event: "Web3 Builders Meetup",
-    limited: false,
-  },
-  {
-    id: "vinyl",
-    name: "Vinyl NFT",
-    price: "0.08 ETH",
-    event: "Decentralized Music Fest",
-    limited: true,
-    supply: 50,
-  },
-  {
-    id: "poster",
-    name: "Limited Poster",
-    price: "0.01 ETH",
-    event: "Onchain Builders Night",
-    limited: true,
-    supply: 100,
-  },
-  {
-    id: "tee",
-    name: "Limited Edition Tee",
-    price: "0.02 ETH",
-    event: "AI × Web3 Expo",
-    limited: true,
-    supply: 300,
-  },
-  {
-    id: "sticker",
-    name: "Sticker Pack",
-    price: "Free",
-    event: "ETH Conference 2026",
-    limited: false,
+    owner: "0x0000000000000000000000000000000000000000",
   },
 ]
 
+/* ================= COMPONENT ================= */
+
 export default function Marketplace() {
+  const { address, isConnected } = useAccount()
+
+  const [items, setItems] = useState<Item[]>(INITIAL_ITEMS)
   const [selectedItem, setSelectedItem] = useState<Item | null>(null)
+  const [createOpen, setCreateOpen] = useState(false)
+
+  /* Form state */
+  const [name, setName] = useState("")
+  const [price, setPrice] = useState("")
+  const [event, setEvent] = useState("")
+  const [description, setDescription] = useState("")
+  const [edition, setEdition] = useState<EditionType>("open")
+  const [supply, setSupply] = useState("")
+
+  /* ================= ACTIONS ================= */
+
+  const createItem = () => {
+    if (!isConnected || !address) return
+
+    const newItem: Item = {
+      id: crypto.randomUUID(),
+      name,
+      price,
+      event,
+      description,
+      edition,
+      supply: edition === "open" ? undefined : Number(supply || 0),
+      owner: address,
+    }
+
+    setItems((prev) => [newItem, ...prev])
+    setCreateOpen(false)
+
+    setName("")
+    setPrice("")
+    setEvent("")
+    setDescription("")
+    setEdition("open")
+    setSupply("")
+  }
+
+  const deleteItem = (id: string) => {
+    setItems((prev) => prev.filter((i) => i.id !== id))
+  }
+
+  /* ================= UI ================= */
 
   return (
-    <div className="min-h-screen px-4 pt-28 pb-24 sm:px-6">
-      {/* Header */}
-      <motion.div
-        initial={{ opacity: 0, y: 12 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.45, ease: "easeOut" }}
-        className="relative mb-20 flex flex-col items-center text-center"
-      >
-        <div className="absolute -z-10 h-40 w-40 rounded-full bg-purple-500/20 blur-3xl" />
+    <motion.div
+      initial={{ opacity: 0, y: 14 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, ease: "easeOut" }}
+      className="min-h-screen px-4 pt-32 pb-24 sm:px-6"
+    >
+      {/* HEADER */}
+      <div className="mb-20 grid grid-cols-3 items-center">
+        <div />
 
-        <h1 className="text-4xl font-bold sm:text-5xl md:text-6xl">
-          <span className="bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent">
-            Merchstore
-          </span>
-        </h1>
+        <div className="text-center">
+          <h1 className="text-4xl font-bold sm:text-5xl md:text-6xl">
+            <span className="bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent">
+              Merchstore
+            </span>
+          </h1>
+          <p className="mt-3 text-sm text-white/60 sm:text-base">
+            Buy and sell event merchandise and collectibles
+          </p>
+        </div>
 
-        <p className="mt-4 max-w-xl text-sm text-white/60 sm:text-base">
-          Buy and sell event merchandise and collectibles on-chain
-        </p>
-      </motion.div>
+        <div className="flex justify-end">
+          <button
+            disabled={!isConnected}
+            onClick={() => setCreateOpen(true)}
+            className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${
+              isConnected
+                ? "bg-purple-500 hover:bg-purple-600"
+                : "cursor-not-allowed bg-white/10 text-white/40"
+            }`}
+          >
+            + List Item
+          </button>
+        </div>
+      </div>
 
-      {/* Grid */}
+      {/* GRID */}
       <motion.div
         initial="hidden"
         animate="show"
-        variants={{
-          show: { transition: { staggerChildren: 0.05 } },
-        }}
+        variants={{ show: { transition: { staggerChildren: 0.05 } } }}
         className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
       >
-        {ITEMS.map((item) => (
+        {items.map((item) => (
           <motion.div
             key={item.id}
             variants={{
               hidden: { opacity: 0, y: 16 },
               show: { opacity: 1, y: 0 },
             }}
-            whileHover={{ y: -4, scale: 1.01 }}
-            transition={{ type: "tween", duration: 0.18, ease: "easeOut" }}
-            className="group relative overflow-hidden rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl transition-shadow hover:shadow-xl hover:shadow-purple-500/10"
+            whileHover={{ y: -4 }}
+            transition={{ duration: 0.18 }}
+            className="group relative rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl hover:shadow-xl hover:shadow-purple-500/10"
           >
-            {/* Image placeholder */}
+            {isConnected && item.owner === address && (
+              <button
+                onClick={() => deleteItem(item.id)}
+                className="absolute right-3 top-3 rounded-full bg-black/40 p-1.5 text-xs text-white/70 hover:bg-red-500/20 hover:text-red-400 transition"
+              >
+                ✕
+              </button>
+            )}
+
             <div className="mb-4 h-40 rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-500/20" />
 
             <h3 className="text-lg font-semibold">{item.name}</h3>
+            <p className="mt-1 text-xs text-white/50">{item.event}</p>
 
-            <p className="mt-1 text-xs text-white/50">
-              {item.event}
-            </p>
-
-            <div className="mt-4 flex items-center justify-between">
-              <span className="text-sm text-white/80">
-                {item.price}
+            <div className="mt-3 flex justify-between text-sm">
+              <span>{item.price}</span>
+              <span className="uppercase text-purple-400">
+                {item.edition}
               </span>
-
-              <button
-                onClick={() => setSelectedItem(item)}
-                className="rounded-lg bg-purple-500/10 px-4 py-1.5 text-sm hover:bg-purple-500/20 transition"
-              >
-                View
-              </button>
             </div>
+
+            <button
+              onClick={() => setSelectedItem(item)}
+              className="mt-4 w-full rounded-lg bg-purple-500/10 py-2 text-sm hover:bg-purple-500/20 transition"
+            >
+              View
+            </button>
           </motion.div>
         ))}
       </motion.div>
 
-      {/* Modal */}
+      {/* VIEW MODAL */}
       <AnimatePresence>
         {selectedItem && (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4"
             onClick={() => setSelectedItem(null)}
           >
             <motion.div
-              initial={{ scale: 0.96, y: 16 }}
-              animate={{ scale: 1, y: 0 }}
-              exit={{ scale: 0.96, y: 16 }}
-              transition={{ type: "tween", duration: 0.2, ease: "easeOut" }}
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-md rounded-2xl border border-white/10 bg-[#0b0b0b] p-6 backdrop-blur-xl"
+              className="w-full max-w-md rounded-2xl bg-[#0b0b0b] p-6"
             >
-              {/* Image */}
-              <div className="mb-5 h-48 rounded-xl bg-gradient-to-br from-purple-500/30 to-pink-500/30" />
-
-              {/* Title */}
               <h2 className="text-xl font-semibold">
                 {selectedItem.name}
               </h2>
-
               <p className="mt-1 text-sm text-white/60">
                 {selectedItem.event}
               </p>
 
-              {/* Price */}
-              <div className="mt-4 flex items-center justify-between">
-                <span className="text-sm text-white/60">Price</span>
-                <span className="font-medium">
-                  {selectedItem.price}
-                </span>
-              </div>
+              <p className="mt-4 text-sm text-white/70">
+                {selectedItem.description}
+              </p>
 
-              {/* Limited edition */}
-              {selectedItem.limited && (
+              {selectedItem.edition !== "open" && (
                 <div className="mt-3 rounded-lg border border-purple-500/30 bg-purple-500/10 px-3 py-2 text-sm text-purple-300">
-                  Limited Edition · {selectedItem.supply} items only
+                  {selectedItem.edition} · {selectedItem.supply} items
                 </div>
               )}
 
-              {/* CTA */}
               <button
-                className="mt-6 w-full rounded-xl bg-purple-500 py-2.5 text-sm font-semibold hover:bg-purple-600 transition"
+                disabled={selectedItem.owner === address}
+                className={`mt-6 w-full rounded-xl py-2.5 text-sm font-semibold transition ${
+                  selectedItem.owner === address
+                    ? "bg-white/10 text-white/40 cursor-not-allowed"
+                    : "bg-purple-500 hover:bg-purple-600"
+                }`}
               >
-                Buy / View Details
+                Buy Item
               </button>
             </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
-    </div>
+
+      {/* CREATE MODAL */}
+      <AnimatePresence>
+        {createOpen && isConnected && (
+          <motion.div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4"
+            onClick={() => setCreateOpen(false)}
+          >
+            <motion.div
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-lg rounded-2xl bg-[#0b0b0b] p-6"
+            >
+              <h2 className="mb-4 text-xl font-semibold">List Item</h2>
+
+              <input
+                placeholder="Item name"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="mb-3 w-full rounded-lg bg-white/5 p-2"
+              />
+
+              <input
+                placeholder="Event"
+                value={event}
+                onChange={(e) => setEvent(e.target.value)}
+                className="mb-3 w-full rounded-lg bg-white/5 p-2"
+              />
+
+              <input
+                placeholder="Price"
+                value={price}
+                onChange={(e) => setPrice(e.target.value)}
+                className="mb-3 w-full rounded-lg bg-white/5 p-2"
+              />
+
+              <textarea
+                placeholder="Description"
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className="mb-3 w-full rounded-lg bg-white/5 p-2"
+              />
+
+              {/* EDITION TYPE */}
+              <div className="mb-4">
+                <p className="mb-2 text-xs uppercase tracking-wide text-white/40">
+                  Edition Type
+                </p>
+
+                <div className="relative flex rounded-xl border border-white/10 bg-white/5 p-1">
+                  <motion.div
+                    layout
+                    transition={{ type: "tween", duration: 0.2, ease: "easeOut" }}
+                    className={`absolute top-1 bottom-1 w-1/3 rounded-lg bg-purple-500 ${
+                      edition === "open"
+                        ? "left-1"
+                        : edition === "limited"
+                        ? "left-1/3"
+                        : "left-2/3"
+                    }`}
+                  />
+
+                  <button
+                    type="button"
+                    onClick={() => setEdition("open")}
+                    className={`relative z-10 w-1/3 rounded-lg py-2 text-sm font-medium ${
+                      edition === "open" ? "text-white" : "text-white/60"
+                    }`}
+                  >
+                    Open
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setEdition("limited")}
+                    className={`relative z-10 w-1/3 rounded-lg py-2 text-sm font-medium ${
+                      edition === "limited" ? "text-white" : "text-white/60"
+                    }`}
+                  >
+                    Limited
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setEdition("extra-limited")}
+                    className={`relative z-10 w-1/3 rounded-lg py-2 text-sm font-medium ${
+                      edition === "extra-limited"
+                        ? "text-white"
+                        : "text-white/60"
+                    }`}
+                  >
+                    Extra
+                  </button>
+                </div>
+              </div>
+
+              {(edition === "limited" || edition === "extra-limited") && (
+                <input
+                  placeholder="Total Supply"
+                  value={supply}
+                  onChange={(e) => setSupply(e.target.value)}
+                  className="mb-3 w-full rounded-lg bg-white/5 p-2"
+                />
+              )}
+
+              <button
+                onClick={createItem}
+                className="mt-4 w-full rounded-xl bg-purple-500 py-2 text-sm font-semibold hover:bg-purple-600 transition"
+              >
+                List Item
+              </button>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </motion.div>
   )
 }
