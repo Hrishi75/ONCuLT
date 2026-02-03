@@ -1,10 +1,32 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
+import { useNavigate } from "react-router-dom"
 import { useAccount } from "wagmi"
+import {
+  createItemDB,
+  createPurchaseDB,
+  deleteItemDB,
+  fetchItemsDB,
+  uploadItemImages,
+} from "../../services/marketplace.service"
 
 /* ================= TYPES ================= */
 
 type EditionType = "open" | "limited" | "extra-limited"
+type ListingType = "artist" | "organizer"
+
+type MarketplaceItemRow = {
+  id: string
+  name: string
+  price: string
+  event: string
+  description: string
+  listing_type?: ListingType | null
+  edition: EditionType
+  supply?: number | null
+  owner_address: string
+  image_urls?: string[] | null
+}
 
 type Item = {
   id: string
@@ -12,9 +34,11 @@ type Item = {
   price: string
   event: string
   description: string
+  listingType?: ListingType
   edition: EditionType
   supply?: number
   owner: string
+  imageUrls?: string[]
 }
 
 /* ================= INITIAL ITEMS ================= */
@@ -35,6 +59,7 @@ const INITIAL_ITEMS: Item[] = [
 /* ================= COMPONENT ================= */
 
 export default function Marketplace() {
+  const navigate = useNavigate()
   const { address, isConnected } = useAccount()
 
   const [items, setItems] = useState<Item[]>(INITIAL_ITEMS)
@@ -46,38 +71,99 @@ export default function Marketplace() {
   const [price, setPrice] = useState("")
   const [event, setEvent] = useState("")
   const [description, setDescription] = useState("")
+  const [listingType, setListingType] = useState<ListingType>("artist")
   const [edition, setEdition] = useState<EditionType>("open")
   const [supply, setSupply] = useState("")
+  const [imageFiles, setImageFiles] = useState<File[]>([])
 
   /* ================= ACTIONS ================= */
 
-  const createItem = () => {
-    if (!isConnected || !address) return
+  const loadItems = async () => {
+    const data = await fetchItemsDB()
+    return (data ?? []).map((item: MarketplaceItemRow) => ({
+      id: item.id,
+      name: item.name,
+      price: item.price,
+      event: item.event,
+      description: item.description,
+      listingType: item.listing_type ?? "artist",
+      edition: item.edition,
+      supply: item.supply ?? undefined,
+      owner: item.owner_address,
+      imageUrls: Array.isArray(item.image_urls) ? item.image_urls : [],
+    })) as Item[]
+  }
 
-    const newItem: Item = {
-      id: crypto.randomUUID(),
-      name,
-      price,
-      event,
-      description,
-      edition,
-      supply: edition === "open" ? undefined : Number(supply || 0),
-      owner: address,
+  useEffect(() => {
+    let cancelled = false
+
+    const load = async () => {
+      try {
+        const mapped = await loadItems()
+        if (!cancelled) setItems(mapped)
+      } catch (error) {
+        console.error("Failed to fetch marketplace items:", error)
+      }
     }
 
-    setItems((prev) => [newItem, ...prev])
-    setCreateOpen(false)
+    void load()
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
+
+  const createItem = async () => {
+    if (!isConnected || !address) return
+
+    try {
+      const imageUrls = await uploadItemImages(address, imageFiles)
+      const payload = {
+        name,
+        price,
+        event,
+        description,
+        listing_type: listingType,
+        edition,
+        supply: edition === "open" ? null : Number(supply || 0),
+        owner_address: address,
+        image_urls: imageUrls,
+      }
+      await createItemDB(payload)
+      const mapped = await loadItems()
+      setItems(mapped)
+      setCreateOpen(false)
+    } catch (error) {
+      console.error("Failed to create item:", error)
+    }
 
     setName("")
     setPrice("")
     setEvent("")
     setDescription("")
+    setListingType("artist")
     setEdition("open")
     setSupply("")
+    setImageFiles([])
   }
 
-  const deleteItem = (id: string) => {
-    setItems((prev) => prev.filter((i) => i.id !== id))
+  const deleteItem = async (id: string) => {
+    try {
+      await deleteItemDB(id)
+      const mapped = await loadItems()
+      setItems(mapped)
+    } catch (error) {
+      console.error("Failed to delete item:", error)
+    }
+  }
+
+  const parseEthPrice = (value: string) => {
+    const cleaned = value.replace(/eth/i, "").trim()
+    const parsed = Number.parseFloat(cleaned)
+    if (!Number.isFinite(parsed)) {
+      throw new Error("Invalid ETH price format")
+    }
+    return parsed
   }
 
   /* ================= UI ================= */
@@ -146,7 +232,18 @@ export default function Marketplace() {
               </button>
             )}
 
-            <div className="mb-4 h-40 rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-500/20" />
+            {item.imageUrls && item.imageUrls.length > 0 ? (
+              <div className="mb-4 overflow-hidden rounded-xl border border-white/10">
+                <img
+                  src={item.imageUrls[0]}
+                  alt={item.name}
+                  className="h-40 w-full object-cover"
+                  loading="lazy"
+                />
+              </div>
+            ) : (
+              <div className="mb-4 h-40 rounded-xl bg-gradient-to-br from-purple-500/20 to-pink-500/20" />
+            )}
 
             <h3 className="text-lg font-semibold">{item.name}</h3>
             <p className="mt-1 text-xs text-white/50">{item.event}</p>
@@ -190,6 +287,38 @@ export default function Marketplace() {
                 {selectedItem.description}
               </p>
 
+              {selectedItem.imageUrls &&
+                selectedItem.imageUrls.length > 0 && (
+                  <div className="mt-6">
+                    <div className="overflow-hidden rounded-xl border border-white/10">
+                      <img
+                        src={selectedItem.imageUrls[0]}
+                        alt={selectedItem.name}
+                        className="h-56 w-full object-cover"
+                        loading="lazy"
+                      />
+                    </div>
+
+                    {selectedItem.imageUrls.length > 1 && (
+                      <div className="mt-3 grid grid-cols-3 gap-3">
+                        {selectedItem.imageUrls.slice(1).map((url) => (
+                          <div
+                            key={url}
+                            className="overflow-hidden rounded-lg border border-white/10"
+                          >
+                            <img
+                              src={url}
+                              alt={`${selectedItem.name} preview`}
+                              className="h-20 w-full object-cover"
+                              loading="lazy"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
+
               {selectedItem.edition !== "open" && (
                 <div className="mt-3 rounded-lg border border-purple-500/30 bg-purple-500/10 px-3 py-2 text-sm text-purple-300">
                   {selectedItem.edition} · {selectedItem.supply} items
@@ -198,6 +327,33 @@ export default function Marketplace() {
 
               <button
                 disabled={selectedItem.owner === address}
+                onClick={() => {
+                  if (!selectedItem || !address) return
+                  try {
+                    const priceEth = parseEthPrice(selectedItem.price)
+                    const platformFeePct =
+                      selectedItem.listingType === "organizer" ? 10 : 5
+
+                    void createPurchaseDB({
+                      item_id: selectedItem.id,
+                      item_name: selectedItem.name,
+                      price_display: selectedItem.price,
+                      price_eth: priceEth,
+                      listing_type: selectedItem.listingType ?? "artist",
+                      seller_address: selectedItem.owner,
+                      buyer_address: address,
+                      platform_fee_pct: platformFeePct,
+                    })
+                  } catch (error) {
+                    console.error("Failed to create purchase:", error)
+                    return
+                  }
+
+                  setSelectedItem(null)
+                  navigate("/purchase-success", {
+                    state: { itemName: selectedItem.name },
+                  })
+                }}
                 className={`mt-6 w-full rounded-xl py-2.5 text-sm font-semibold transition ${
                   selectedItem.owner === address
                     ? "bg-white/10 text-white/40 cursor-not-allowed"
@@ -251,6 +407,65 @@ export default function Marketplace() {
                 onChange={(e) => setDescription(e.target.value)}
                 className="mb-3 w-full rounded-lg bg-white/5 p-2"
               />
+
+              <div className="mb-4">
+                <p className="mb-2 text-xs uppercase tracking-wide text-white/40">
+                  Listing Type
+                </p>
+                <div className="relative flex rounded-xl border border-white/10 bg-white/5 p-1">
+                  <motion.div
+                    layout
+                    transition={{ type: "tween", duration: 0.2, ease: "easeOut" }}
+                    className={`absolute top-1 bottom-1 w-1/2 rounded-lg bg-purple-500 ${
+                      listingType === "artist" ? "left-1" : "left-1/2"
+                    }`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setListingType("artist")}
+                    className={`relative z-10 w-1/2 rounded-lg py-2 text-sm font-medium ${
+                      listingType === "artist" ? "text-white" : "text-white/60"
+                    }`}
+                  >
+                    Artist / Creator
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setListingType("organizer")}
+                    className={`relative z-10 w-1/2 rounded-lg py-2 text-sm font-medium ${
+                      listingType === "organizer"
+                        ? "text-white"
+                        : "text-white/60"
+                    }`}
+                  >
+                    Event Organizer
+                  </button>
+                </div>
+              </div>
+
+              <div className="mb-4">
+                <label
+                  className="group flex w-full cursor-pointer items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/80 transition hover:border-purple-400/50 hover:bg-purple-500/10"
+                >
+                  <span className="font-medium">
+                    {imageFiles.length > 0
+                      ? `${imageFiles.length} file(s) selected`
+                      : "Choose item images"}
+                  </span>
+                  <span className="rounded-lg border border-white/10 bg-black/40 px-3 py-1.5 text-xs uppercase tracking-wide text-white/70 transition group-hover:border-purple-400/40 group-hover:text-purple-200">
+                    Browse
+                  </span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={(e) =>
+                      setImageFiles(Array.from(e.target.files ?? []))
+                    }
+                    className="hidden"
+                  />
+                </label>
+              </div>
 
               {/* EDITION TYPE */}
               <div className="mb-4">

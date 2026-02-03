@@ -1,8 +1,94 @@
 import { motion } from "framer-motion"
+import { useEffect, useMemo, useState } from "react"
 import { useAccount } from "wagmi"
+import { fetchPurchasesAll } from "../../services/marketplace.service"
+
+type Purchase = {
+  id: string
+  item_name: string
+  price_display: string
+  price_eth: number
+  listing_type: "artist" | "organizer"
+  platform_fee_pct: number
+  created_at: string
+}
+
+type PurchaseRow = {
+  id: string
+  item_name: string
+  price_display: string
+  price_eth: number | string | null
+  listing_type: "artist" | "organizer"
+  platform_fee_pct: number | string | null
+  created_at: string
+}
 
 export default function Payout() {
-  const { address, isConnected } = useAccount()
+  const { isConnected } = useAccount()
+  const [purchases, setPurchases] = useState<Purchase[]>([])
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const data = await fetchPurchasesAll()
+        setPurchases(
+          (data ?? []).map((row: PurchaseRow) => ({
+            id: row.id,
+            item_name: row.item_name,
+            price_display: row.price_display,
+            price_eth: Number(row.price_eth ?? 0),
+            listing_type: row.listing_type,
+            platform_fee_pct: Number(row.platform_fee_pct ?? 0),
+            created_at: row.created_at,
+          }))
+        )
+      } catch (error) {
+        console.error("Failed to load payouts:", error)
+      }
+    }
+
+    void load()
+  }, [])
+
+  const totals = useMemo(() => {
+    const totalEarned = purchases.reduce((sum, p) => {
+      const net = p.price_eth * (1 - p.platform_fee_pct / 100)
+      return sum + net
+    }, 0)
+
+    return {
+      totalEarned,
+      pendingPayouts: 0,
+      activeSplits: purchases.length,
+    }
+  }, [purchases])
+
+  const revenueBreakdown = useMemo(() => {
+    const gross = purchases.reduce((sum, p) => sum + p.price_eth, 0)
+    const platformFees = purchases.reduce(
+      (sum, p) => sum + p.price_eth * (p.platform_fee_pct / 100),
+      0
+    )
+    const artistEarned = purchases.reduce((sum, p) => {
+      if (p.listing_type !== "artist") return sum
+      const net = p.price_eth * (1 - p.platform_fee_pct / 100)
+      return sum + net
+    }, 0)
+    const organizerEarned = purchases.reduce((sum, p) => {
+      if (p.listing_type !== "organizer") return sum
+      const net = p.price_eth * (1 - p.platform_fee_pct / 100)
+      return sum + net
+    }, 0)
+
+    const pct = (value: number) =>
+      gross > 0 ? `${((value / gross) * 100).toFixed(1)}%` : "0.0%"
+
+    return {
+      artistPct: pct(artistEarned),
+      organizerPct: pct(organizerEarned),
+      platformPct: pct(platformFees),
+    }
+  }, [purchases])
 
   return (
     <div className="min-h-screen px-6 pt-28 pb-24">
@@ -33,9 +119,15 @@ export default function Payout() {
       {/* Stats */}
       <div className="grid gap-6 md:grid-cols-3 mb-16">
         {[
-          { label: "Total Earned", value: "0.00 ETH" },
-          { label: "Pending Payouts", value: "0.00 ETH" },
-          { label: "Active Splits", value: "0" },
+          {
+            label: "Total Earned",
+            value: `${totals.totalEarned.toFixed(4)} ETH`,
+          },
+          {
+            label: "Pending Payouts",
+            value: `${totals.pendingPayouts.toFixed(4)} ETH`,
+          },
+          { label: "Active Splits", value: `${totals.activeSplits}` },
         ].map((stat) => (
           <motion.div
             key={stat.label}
@@ -56,14 +148,14 @@ export default function Payout() {
         className="mb-16 rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl"
       >
         <h2 className="text-xl font-semibold mb-4">
-          Revenue Split Preview
+          Revenue Earned Preview
         </h2>
 
         <div className="space-y-3 text-sm">
           {[
-            { role: "Event Organizer", percent: "60%" },
-            { role: "Artist / Creator", percent: "30%" },
-            { role: "Platform Fee", percent: "10%" },
+            { role: "Artist / Creator Earned", percent: revenueBreakdown.artistPct },
+            { role: "Event Organizer Earned", percent: revenueBreakdown.organizerPct },
+            { role: "Platform Fees Earned", percent: revenueBreakdown.platformPct },
           ].map((split) => (
             <div
               key={split.role}
@@ -74,10 +166,6 @@ export default function Payout() {
             </div>
           ))}
         </div>
-
-        <p className="mt-4 text-xs text-white/40">
-          * Splits are enforced on-chain via smart contracts.
-        </p>
       </motion.div>
 
       {/* Recent payouts */}
@@ -90,9 +178,40 @@ export default function Payout() {
           Recent Payouts
         </h2>
 
-        <div className="text-sm text-white/60">
-          No payouts yet.
-        </div>
+        {purchases.length === 0 ? (
+          <div className="text-sm text-white/60">
+            No payouts yet.
+          </div>
+        ) : (
+          <div className="space-y-3 text-sm">
+            {purchases.slice(0, 6).map((p) => {
+              const net = p.price_eth * (1 - p.platform_fee_pct / 100)
+              return (
+                <div
+                  key={p.id}
+                  className="flex items-center justify-between rounded-lg bg-white/5 px-4 py-2"
+                >
+                  <div>
+                    <p className="font-medium">{p.item_name}</p>
+                    <p className="text-xs text-white/50">
+                      {p.listing_type === "organizer"
+                        ? "Event Organizer Listing"
+                        : "Artist / Creator Listing"}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <p className="font-semibold">
+                      +{net.toFixed(4)} ETH
+                    </p>
+                    <p className="text-xs text-white/50">
+                      Gross {p.price_display} Â· Fee {p.platform_fee_pct}%
+                    </p>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        )}
       </motion.div>
 
       {/* Testnet footer */}
