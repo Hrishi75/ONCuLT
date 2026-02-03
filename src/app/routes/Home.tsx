@@ -9,7 +9,16 @@ export default function Home() {
       {/* Background glow */}
       <div className="absolute inset-0 -z-10 bg-[radial-gradient(circle_at_top,rgba(168,85,247,0.15),transparent_40%)]" />
 
-      <section className="flex min-h-screen flex-col items-center justify-center px-6 text-center">
+      <section className="flex flex-col items-center justify-center px-6 pt-40 pb-24 text-center">
+        <motion.div
+  initial={{ opacity: 0, y: 12 }}
+  animate={{ opacity: 1, y: 0 }}
+  transition={{ duration: 0.5, ease: "easeOut" }}
+  className="mb-6 text-2xl sm:text-3xl md:text-4xl font-bold tracking-wide"
+>
+  On<span className="text-purple-400">CuLT</span>
+</motion.div>
+
         <motion.h1
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -46,7 +55,7 @@ export default function Home() {
           </button>
 
          <button
-            onClick={() => navigate("/merchstore")}
+            onClick={() => navigate("/marketplace")}
             className="rounded-full bg-purple-500 px-8 py-3 text-sm font-semibold hover:bg-purple-600 transition"
           >
             Merchstore
