@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useNavigate } from "react-router-dom"
-import { useAccount, usePublicClient, useWriteContract } from "wagmi"
+import { useAccount, useChainId, usePublicClient, useWriteContract } from "wagmi"
 import { decodeEventLog, keccak256, parseEther, toHex } from "viem"
 import toast from "react-hot-toast"
 import {
@@ -13,8 +13,9 @@ import {
 } from "../../services/marketplace.service"
 import {
   RECEIPT_CONTRACT_ABI,
-  RECEIPT_CONTRACT_ADDRESS,
+  getReceiptContractAddress,
 } from "../../lib/receiptContract"
+import { getChainLabel } from "../../lib/chainConfig"
 
 /* ================= TYPES ================= */
 
@@ -67,6 +68,7 @@ const INITIAL_ITEMS: Item[] = [
 export default function Marketplace() {
   const navigate = useNavigate()
   const { address, isConnected } = useAccount()
+  const chainId = useChainId()
   const { writeContractAsync, isPending: isMinting } = useWriteContract()
   const publicClient = usePublicClient()
 
@@ -382,11 +384,11 @@ export default function Marketplace() {
                   let txHash: `0x${string}` | undefined
                   let tokenId: string | null = null
                   let tokenUri: string | undefined
+                  let receiptContract: `0x${string}` | undefined
 
                   try {
-                    if (
-                      !/^0x[a-fA-F0-9]{40}$/.test(RECEIPT_CONTRACT_ADDRESS)
-                    ) {
+                    receiptContract = getReceiptContractAddress(chainId)
+                    if (!receiptContract) {
                       throw new Error("Receipt contract address not set")
                     }
 
@@ -399,7 +401,7 @@ export default function Marketplace() {
                     const onchainItemId = toOnchainItemId(selectedItem.id)
 
                     txHash = (await writeContractAsync({
-                      address: RECEIPT_CONTRACT_ADDRESS,
+                      address: receiptContract,
                       abi: RECEIPT_CONTRACT_ABI,
                       functionName: "mintReceipt",
                       value: priceWei,
@@ -444,20 +446,26 @@ export default function Marketplace() {
                       }
                     }
 
-                    await createPurchaseDB({
-                      item_id: selectedItem.id,
-                      item_name: selectedItem.name,
-                      price_display: selectedItem.price,
-                      price_eth: priceEth,
-                      listing_type: selectedItem.listingType ?? "artist",
-                      seller_address: selectedItem.owner,
-                      buyer_address: address,
-                      platform_fee_pct: platformFeePct,
-                      tx_hash: txHash,
-                      receipt_contract: RECEIPT_CONTRACT_ADDRESS,
-                      receipt_token_id: tokenId,
-                      receipt_token_uri: tokenUri ?? null,
-                    })
+                    try {
+                      await createPurchaseDB({
+                        item_id: selectedItem.id,
+                        item_name: selectedItem.name,
+                        price_display: selectedItem.price,
+                        price_eth: priceEth,
+                        listing_type: selectedItem.listingType ?? "artist",
+                        seller_address: selectedItem.owner,
+                        buyer_address: address,
+                        platform_fee_pct: platformFeePct,
+                        tx_hash: txHash,
+                        receipt_contract: receiptContract,
+                        receipt_token_id: tokenId,
+                        receipt_token_uri: tokenUri ?? null,
+                        chain_id: chainId,
+                        chain_name: getChainLabel(chainId),
+                      })
+                    } catch (dbError) {
+                      console.error("Failed to store purchase:", dbError)
+                    }
                   } catch (error) {
                     console.error("Failed to create purchase:", error)
                     return
@@ -469,8 +477,9 @@ export default function Marketplace() {
                       state: {
                         itemName,
                         txHash,
-                        receiptContract: RECEIPT_CONTRACT_ADDRESS,
+                        receiptContract: receiptContract ?? null,
                         receiptTokenId: tokenId,
+                        chainId,
                       },
                     })
                   }

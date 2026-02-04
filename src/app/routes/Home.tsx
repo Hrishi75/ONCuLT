@@ -16,7 +16,7 @@ export default function Home() {
   transition={{ duration: 0.5, ease: "easeOut" }}
   className="mb-6 text-2xl sm:text-3xl md:text-4xl font-bold tracking-wide"
 >
-  On<span className="text-purple-400">CuLT</span>
+  On<span className="bg-gradient-to-r from-fuchsia-400 via-purple-400 to-cyan-300 bg-clip-text text-transparent">CuLT</span>
 </motion.div>
 
         <motion.h1

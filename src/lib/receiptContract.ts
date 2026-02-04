@@ -1,5 +1,22 @@
-export const RECEIPT_CONTRACT_ADDRESS =
+export const BASE_SEPOLIA_RECEIPT_CONTRACT =
   "0x2181D635863e0B51d2c76D9d74271CC23a4101FB" as `0x${string}`
+export const ARC_TESTNET_RECEIPT_CONTRACT =
+  "0x2181D635863e0B51d2c76D9d74271CC23a4101FB" as `0x${string}` | ""
+
+export const getReceiptContractAddress = (chainId?: number) => {
+  if (chainId === 5042002) {
+    return ARC_TESTNET_RECEIPT_CONTRACT || undefined
+  }
+  return BASE_SEPOLIA_RECEIPT_CONTRACT
+}
+
+export const getChainIdForReceiptContract = (address?: string | null) => {
+  if (!address) return undefined
+  const normalized = address.toLowerCase()
+  if (normalized === ARC_TESTNET_RECEIPT_CONTRACT?.toLowerCase()) return 5042002
+  if (normalized === BASE_SEPOLIA_RECEIPT_CONTRACT?.toLowerCase()) return 84532
+  return undefined
+}
 
 export const RECEIPT_CONTRACT_ABI = [
   {
