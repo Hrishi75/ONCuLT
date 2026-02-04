@@ -10,12 +10,16 @@ export default function FloatingNavbar() {
     <div className="fixed top-5 left-1/2 z-50 -translate-x-1/2">
       <div className="relative">
         {/* Main navbar */}
-        <div className="flex items-center gap-6 rounded-full border border-white/10 bg-white/5 px-6 py-3 backdrop-blur-xl shadow-lg shadow-black/40">
+        <div className="flex items-center gap-4 rounded-full border border-white/10 bg-white/5 px-6 py-3 backdrop-blur-xl shadow-lg shadow-black/40">
           
           {/* Logo */}
           <Link to="/" className="text-lg font-semibold tracking-wide">
             On<span className="text-purple-400">CuLT</span>
           </Link>
+
+          <span className="hidden rounded-full border border-blue-400/40 bg-blue-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-blue-200 md:inline">
+            Base Sepolia
+          </span>
 
           {/* Desktop nav */}
           <nav className="hidden md:flex gap-5 text-sm text-white/70">

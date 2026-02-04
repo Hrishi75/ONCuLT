@@ -1,12 +1,12 @@
 import { getDefaultConfig } from "@rainbow-me/rainbowkit"
-import { sepolia } from "wagmi/chains"
+import { baseSepolia } from "wagmi/chains"
 
 export const config = getDefaultConfig({
   appName: "OnCuLT",
   projectId: "YOUR_WALLETCONNECT_PROJECT_ID",
 
   
-  chains: [sepolia],
+  chains: [baseSepolia],
 
   ssr: false,
 })

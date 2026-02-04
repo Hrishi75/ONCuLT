@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useNavigate } from "react-router-dom"
-import { useAccount } from "wagmi"
+import { useAccount, usePublicClient, useWriteContract } from "wagmi"
+import { decodeEventLog, keccak256, parseEther, toHex } from "viem"
+import toast from "react-hot-toast"
 import {
   createItemDB,
   createPurchaseDB,
@@ -9,6 +11,10 @@ import {
   fetchItemsDB,
   uploadItemImages,
 } from "../../services/marketplace.service"
+import {
+  RECEIPT_CONTRACT_ABI,
+  RECEIPT_CONTRACT_ADDRESS,
+} from "../../lib/receiptContract"
 
 /* ================= TYPES ================= */
 
@@ -47,7 +53,7 @@ const INITIAL_ITEMS: Item[] = [
   {
     id: "hoodie-eth",
     name: "ETH Conf Hoodie",
-    price: "0.05 ETH",
+    price: "0.0005 ETH",
     event: "ETH Conference 2026",
     description: "Official ETH Conf 2026 hoodie",
     edition: "limited",
@@ -61,6 +67,8 @@ const INITIAL_ITEMS: Item[] = [
 export default function Marketplace() {
   const navigate = useNavigate()
   const { address, isConnected } = useAccount()
+  const { writeContractAsync, isPending: isMinting } = useWriteContract()
+  const publicClient = usePublicClient()
 
   const [items, setItems] = useState<Item[]>(INITIAL_ITEMS)
   const [selectedItem, setSelectedItem] = useState<Item | null>(null)
@@ -164,6 +172,42 @@ export default function Marketplace() {
       throw new Error("Invalid ETH price format")
     }
     return parsed
+  }
+
+  const toWei = (value: string) => {
+    const cleaned = value.replace(/eth/i, "").trim()
+    return parseEther(cleaned)
+  }
+
+  const toBase64 = (value: string) => {
+    return btoa(unescape(encodeURIComponent(value)))
+  }
+
+  const buildTokenUri = (item: Item, buyer: string) => {
+    const metadata = {
+      name: `Oncult Receipt - ${item.name}`,
+      description: "Proof of purchase for Oncult marketplace.",
+      image: item.imageUrls?.[0] ?? "",
+      attributes: [
+        { trait_type: "Item", value: item.name },
+        { trait_type: "Price", value: item.price },
+        {
+          trait_type: "Listing Type",
+          value: item.listingType ?? "artist",
+        },
+        { trait_type: "Seller", value: item.owner },
+        { trait_type: "Buyer", value: buyer },
+      ],
+    }
+
+    return `data:application/json;base64,${toBase64(
+      JSON.stringify(metadata)
+    )}`
+  }
+
+  const toOnchainItemId = (id: string) => {
+    const hash = keccak256(toHex(id))
+    return BigInt(hash)
   }
 
   /* ================= UI ================= */
@@ -327,14 +371,80 @@ export default function Marketplace() {
 
               <button
                 disabled={selectedItem.owner === address}
-                onClick={() => {
-                  if (!selectedItem || !address) return
+                onClick={async () => {
+                  if (!isConnected || !address) {
+                    toast.error("Please connect your wallet to buy items")
+                    return
+                  }
+                  if (!selectedItem) return
+
+                  const itemName = selectedItem.name
+                  let txHash: `0x${string}` | undefined
+                  let tokenId: string | null = null
+                  let tokenUri: string | undefined
+
                   try {
+                    if (
+                      !/^0x[a-fA-F0-9]{40}$/.test(RECEIPT_CONTRACT_ADDRESS)
+                    ) {
+                      throw new Error("Receipt contract address not set")
+                    }
+
                     const priceEth = parseEthPrice(selectedItem.price)
+                    const priceWei = toWei(selectedItem.price)
                     const platformFeePct =
                       selectedItem.listingType === "organizer" ? 10 : 5
 
-                    void createPurchaseDB({
+                    tokenUri = buildTokenUri(selectedItem, address)
+                    const onchainItemId = toOnchainItemId(selectedItem.id)
+
+                    txHash = (await writeContractAsync({
+                      address: RECEIPT_CONTRACT_ADDRESS,
+                      abi: RECEIPT_CONTRACT_ABI,
+                      functionName: "mintReceipt",
+                      value: priceWei,
+                      args: [
+                        address,
+                        onchainItemId,
+                        selectedItem.owner,
+                        priceWei,
+                        tokenUri,
+                      ],
+                    })) as `0x${string}`
+
+                    if (!publicClient) {
+                      throw new Error("Public client not available")
+                    }
+
+                    const receipt = await publicClient.waitForTransactionReceipt(
+                      { hash: txHash }
+                    )
+                    const receiptLog = receipt.logs.find((log) => {
+                      try {
+                        decodeEventLog({
+                          abi: RECEIPT_CONTRACT_ABI,
+                          data: log.data,
+                          topics: log.topics,
+                        })
+                        return true
+                      } catch {
+                        return false
+                      }
+                    })
+
+                    if (receiptLog) {
+                      const decoded = decodeEventLog({
+                        abi: RECEIPT_CONTRACT_ABI,
+                        data: receiptLog.data,
+                        topics: receiptLog.topics,
+                      })
+                      const eventTokenId = decoded.args?.tokenId
+                      if (typeof eventTokenId === "bigint") {
+                        tokenId = eventTokenId.toString()
+                      }
+                    }
+
+                    await createPurchaseDB({
                       item_id: selectedItem.id,
                       item_name: selectedItem.name,
                       price_display: selectedItem.price,
@@ -343,6 +453,10 @@ export default function Marketplace() {
                       seller_address: selectedItem.owner,
                       buyer_address: address,
                       platform_fee_pct: platformFeePct,
+                      tx_hash: txHash,
+                      receipt_contract: RECEIPT_CONTRACT_ADDRESS,
+                      receipt_token_id: tokenId,
+                      receipt_token_uri: tokenUri ?? null,
                     })
                   } catch (error) {
                     console.error("Failed to create purchase:", error)
@@ -350,18 +464,28 @@ export default function Marketplace() {
                   }
 
                   setSelectedItem(null)
-                  navigate("/purchase-success", {
-                    state: { itemName: selectedItem.name },
-                  })
+                  if (txHash) {
+                    navigate("/purchase-success", {
+                      state: {
+                        itemName,
+                        txHash,
+                        receiptContract: RECEIPT_CONTRACT_ADDRESS,
+                        receiptTokenId: tokenId,
+                      },
+                    })
+                  }
                 }}
                 className={`mt-6 w-full rounded-xl py-2.5 text-sm font-semibold transition ${
                   selectedItem.owner === address
                     ? "bg-white/10 text-white/40 cursor-not-allowed"
+                    : isMinting
+                    ? "bg-purple-500/60 text-white/80 cursor-wait"
                     : "bg-purple-500 hover:bg-purple-600"
                 }`}
               >
-                Buy Item
+                {isMinting ? "Minting..." : "Buy Item"}
               </button>
+
             </motion.div>
           </motion.div>
         )}
