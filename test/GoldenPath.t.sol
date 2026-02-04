@@ -50,11 +50,11 @@ contract GoldenPathTest is Test {
         registry.setPayoutPreferences(uint64(1), address(usdc), creator);
 
         // Split: 90% creator, 10% manager
-        address;
+        address[] memory recipients = new address[](2);
+        uint16[] memory bps = new uint16[](2);
         recipients[0] = creator;
         recipients[1] = manager;
 
-        uint16;
         bps[0] = 9000;
         bps[1] = 1000;
 
