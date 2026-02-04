@@ -21,6 +21,10 @@ export type CreatePurchasePayload = {
   seller_address: string
   buyer_address: string
   platform_fee_pct: number
+  tx_hash?: string | null
+  receipt_contract?: string | null
+  receipt_token_id?: string | null
+  receipt_token_uri?: string | null
 }
 
 export async function createItemDB(payload: CreateItemPayload) {

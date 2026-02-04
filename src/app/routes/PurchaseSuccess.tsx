@@ -4,9 +4,18 @@ import { useLocation, useNavigate } from "react-router-dom"
 export default function PurchaseSuccess() {
   const navigate = useNavigate()
   const location = useLocation()
-  const itemName =
-    (location.state as { itemName?: string } | null)?.itemName ??
-    "your merch"
+  const state = location.state as
+    | {
+        itemName?: string
+        txHash?: string
+        receiptContract?: string
+        receiptTokenId?: string | null
+      }
+    | null
+  const itemName = state?.itemName ?? "your merch"
+  const txHash = state?.txHash
+  const receiptContract = state?.receiptContract
+  const receiptTokenId = state?.receiptTokenId
 
   return (
     <motion.div
@@ -32,6 +41,29 @@ export default function PurchaseSuccess() {
         <p className="mt-3 text-sm text-white/60 sm:text-base">
           You successfully bought {itemName}.
         </p>
+
+        <div className="mt-4 flex flex-col gap-2 text-sm text-white/70">
+          {txHash && (
+            <a
+              href={`https://sepolia-explorer.base.org/tx/${txHash}`}
+              target="_blank"
+              rel="noreferrer"
+              className="underline hover:text-white"
+            >
+              View on BaseScan
+            </a>
+          )}
+          {receiptContract && receiptTokenId && (
+            <a
+              href={`https://sepolia-explorer.base.org/token/${receiptContract}?a=${receiptTokenId}`}
+              target="_blank"
+              rel="noreferrer"
+              className="underline hover:text-white"
+            >
+              View Receipt NFT
+            </a>
+          )}
+        </div>
 
         <div className="mt-8 flex w-full flex-col gap-3 sm:flex-row sm:justify-center">
           <button

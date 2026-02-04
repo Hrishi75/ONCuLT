@@ -10,6 +10,9 @@ type Purchase = {
   price_eth: number
   listing_type: "artist" | "organizer"
   platform_fee_pct: number
+  tx_hash?: string | null
+  receipt_contract?: string | null
+  receipt_token_id?: string | null
   created_at: string
 }
 
@@ -20,6 +23,9 @@ type PurchaseRow = {
   price_eth: number | string | null
   listing_type: "artist" | "organizer"
   platform_fee_pct: number | string | null
+  tx_hash?: string | null
+  receipt_contract?: string | null
+  receipt_token_id?: string | null
   created_at: string
 }
 
@@ -39,6 +45,9 @@ export default function Payout() {
             price_eth: Number(row.price_eth ?? 0),
             listing_type: row.listing_type,
             platform_fee_pct: Number(row.platform_fee_pct ?? 0),
+            tx_hash: row.tx_hash ?? null,
+            receipt_contract: row.receipt_contract ?? null,
+            receipt_token_id: row.receipt_token_id ?? null,
             created_at: row.created_at,
           }))
         )
@@ -198,6 +207,9 @@ export default function Payout() {
                         ? "Event Organizer Listing"
                         : "Artist / Creator Listing"}
                     </p>
+                    <p className="text-xs text-white/40">
+                      {new Date(p.created_at).toLocaleString()}
+                    </p>
                   </div>
                   <div className="text-right">
                     <p className="font-semibold">
@@ -206,6 +218,28 @@ export default function Payout() {
                     <p className="text-xs text-white/50">
                       Gross {p.price_display} Â· Fee {p.platform_fee_pct}%
                     </p>
+                    <div className="mt-2 flex flex-col gap-1 text-xs">
+                      {p.tx_hash && (
+                        <a
+                          href={`https://sepolia-explorer.base.org/tx/${p.tx_hash}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-purple-300 hover:text-purple-200 underline"
+                        >
+                          View Tx
+                        </a>
+                      )}
+                      {p.receipt_contract && p.receipt_token_id && (
+                        <a
+                          href={`https://sepolia-explorer.base.org/token/${p.receipt_contract}?a=${p.receipt_token_id}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-purple-300 hover:text-purple-200 underline"
+                        >
+                          View Receipt NFT
+                        </a>
+                      )}
+                    </div>
                   </div>
                 </div>
               )
