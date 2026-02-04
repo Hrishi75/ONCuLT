@@ -6,6 +6,7 @@ import Events from "./app/routes/Events"
 import ProtectedRoute from "./components/ProtectedRoute"
 import Marketplace from "./app/routes/Marketplace"
 import Payout from "./app/routes/Payout"
+import PurchaseSuccess from "./app/routes/PurchaseSuccess"
 
 
 
@@ -22,6 +23,7 @@ export default function App() {
           path="/events"
           element={ <Events />}/>
         <Route path="/marketplace" element={<Marketplace />} />
+        <Route path="/purchase-success" element={<PurchaseSuccess />} />
         <Route
   path="/payout"
   element={

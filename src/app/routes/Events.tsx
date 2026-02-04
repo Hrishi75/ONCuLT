@@ -1,7 +1,14 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useNavigate } from "react-router-dom"
 import { useAccount } from "wagmi"
+import { supabase } from "../../lib/supabase"
+import {
+  createEventDB,
+  deleteEventDB,
+  fetchEventsDB,
+  uploadEventImages,
+} from "../../services/events.service"
 
 /* ================= TYPES ================= */
 
@@ -22,6 +29,17 @@ type EventType = {
   merch: string[]
   sideEvents: SideEvent[]
   owner: string
+  imageUrls?: string[]
+}
+
+type EventRow = {
+  id: string
+  name: string
+  location: string
+  merch?: string[] | null
+  side_events?: SideEvent[] | null
+  owner_address: string
+  image_urls?: string[] | null
 }
 
 /* ================= INITIAL DATA ================= */
@@ -55,14 +73,50 @@ export default function Events() {
   const [location, setLocation] = useState("")
   const [mainMerch, setMainMerch] = useState("")
   const [sideEvents, setSideEvents] = useState<SideEventForm[]>([])
+  const [imageFiles, setImageFiles] = useState<File[]>([])
 
   /* ================= HELPERS ================= */
+
+  const loadEvents = async () => {
+    try {
+      const data = await fetchEventsDB()
+      const mapped = (data ?? []).map((event: EventRow) => ({
+        id: event.id,
+        name: event.name,
+        location: event.location,
+        merch: Array.isArray(event.merch) ? event.merch : [],
+        sideEvents: Array.isArray(event.side_events) ? event.side_events : [],
+        owner: event.owner_address,
+        imageUrls: (Array.isArray(event.image_urls) ? event.image_urls : [])
+          .map((item: string) => {
+            if (typeof item !== "string" || !item.trim()) return ""
+            if (item.startsWith("http://") || item.startsWith("https://")) {
+              return item
+            }
+            const { data } = supabase
+              .storage
+              .from("event-images")
+              .getPublicUrl(item)
+            return data?.publicUrl ?? ""
+          })
+          .filter(Boolean),
+      })) as EventType[]
+
+      setEvents(mapped)
+    } catch (error) {
+      console.error("Failed to fetch events:", error)
+    }
+  }
+
+  useEffect(() => {
+    void loadEvents()
+  }, [])
 
   const addSideEvent = () => {
     setSideEvents((prev) => [...prev, { name: "", merchInput: "" }])
   }
 
-  const createEvent = () => {
+  const createEvent = async () => {
     if (!isConnected || !address) return
 
     const parsedSideEvents: SideEvent[] = sideEvents
@@ -75,30 +129,44 @@ export default function Events() {
           .filter(Boolean),
       }))
 
-    const newEvent: EventType = {
-      id: crypto.randomUUID(),
-      name: eventName,
-      location,
-      merch: mainMerch
-        .split(",")
-        .map((m) => m.trim())
-        .filter(Boolean),
-      sideEvents: parsedSideEvents,
-      owner: address,
-    }
+    try {
+      const imageUrls = await uploadEventImages(address, imageFiles)
 
-    setEvents((prev) => [newEvent, ...prev])
-    setCreateOpen(false)
+      const payload = {
+        name: eventName,
+        location,
+        merch: mainMerch
+          .split(",")
+          .map((m) => m.trim())
+          .filter(Boolean),
+        side_events: parsedSideEvents,
+        owner_address: address,
+        image_urls: imageUrls,
+      }
+
+      await createEventDB(payload)
+      await loadEvents()
+      setCreateOpen(false)
+    } catch (error) {
+      console.error("Failed to create event:", error)
+    }
 
     setEventName("")
     setLocation("")
     setMainMerch("")
     setSideEvents([])
+    setImageFiles([])
   }
 
-  const deleteEvent = (id: string) => {
-    setEvents((prev) => prev.filter((e) => e.id !== id))
-    setSelectedEvent(null)
+  const deleteEvent = async (id: string) => {
+    try {
+      await deleteEventDB(id)
+      await loadEvents()
+    } catch (error) {
+      console.error("Failed to delete event:", error)
+    } finally {
+      setSelectedEvent(null)
+    }
   }
 
   /* ================= UI ================= */
@@ -149,6 +217,16 @@ export default function Events() {
             transition={{ duration: 0.18 }}
             className="group relative rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl hover:shadow-xl hover:shadow-purple-500/10"
           >
+            {event.imageUrls && event.imageUrls.length > 0 && (
+              <div className="mb-4 overflow-hidden rounded-xl border border-white/10">
+                <img
+                  src={event.imageUrls[0]}
+                  alt={event.name}
+                  className="h-40 w-full object-cover"
+                  loading="lazy"
+                />
+              </div>
+            )}
             {isConnected && event.owner === address && (
               <button
                 onClick={() => deleteEvent(event.id)}
@@ -207,6 +285,30 @@ export default function Events() {
                 onChange={(e) => setMainMerch(e.target.value)}
                 className="mb-4 w-full rounded-lg bg-white/5 p-2"
               />
+
+              <div className="mb-4">
+                <label
+                  className="group flex w-full cursor-pointer items-center justify-between gap-3 rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white/80 transition hover:border-purple-400/50 hover:bg-purple-500/10"
+                >
+                  <span className="font-medium">
+                    {imageFiles.length > 0
+                      ? `${imageFiles.length} file(s) selected`
+                      : "Choose event images"}
+                  </span>
+                  <span className="rounded-lg border border-white/10 bg-black/40 px-3 py-1.5 text-xs uppercase tracking-wide text-white/70 transition group-hover:border-purple-400/40 group-hover:text-purple-200">
+                    Browse
+                  </span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    onChange={(e) =>
+                      setImageFiles(Array.from(e.target.files ?? []))
+                    }
+                    className="hidden"
+                  />
+                </label>
+              </div>
 
               <div className="mt-4">
                 <p className="mb-2 text-xs uppercase tracking-wide text-white/40">
@@ -287,6 +389,38 @@ export default function Events() {
               <p className="mt-1 text-sm text-white/60">
                 {selectedEvent.location}
               </p>
+
+              {selectedEvent.imageUrls &&
+                selectedEvent.imageUrls.length > 0 && (
+                  <div className="mt-6">
+                    <div className="overflow-hidden rounded-xl border border-white/10">
+                      <img
+                        src={selectedEvent.imageUrls[0]}
+                        alt={selectedEvent.name}
+                        className="h-56 w-full object-cover"
+                        loading="lazy"
+                      />
+                    </div>
+
+                    {selectedEvent.imageUrls.length > 1 && (
+                      <div className="mt-3 grid grid-cols-3 gap-3">
+                        {selectedEvent.imageUrls.slice(1).map((url) => (
+                          <div
+                            key={url}
+                            className="overflow-hidden rounded-lg border border-white/10"
+                          >
+                            <img
+                              src={url}
+                              alt={`${selectedEvent.name} preview`}
+                              className="h-20 w-full object-cover"
+                              loading="lazy"
+                            />
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
 
               <div className="mt-6">
                 <p className="mb-2 text-xs uppercase tracking-wide text-white/40">
