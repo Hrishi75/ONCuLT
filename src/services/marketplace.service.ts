@@ -25,6 +25,8 @@ export type CreatePurchasePayload = {
   receipt_contract?: string | null
   receipt_token_id?: string | null
   receipt_token_uri?: string | null
+  chain_id?: number | null
+  chain_name?: string | null
 }
 
 export async function createItemDB(payload: CreateItemPayload) {

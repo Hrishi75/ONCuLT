@@ -1,21 +1,28 @@
 import { motion } from "framer-motion"
 import { useLocation, useNavigate } from "react-router-dom"
+import { useChainId } from "wagmi"
+import { getExplorerBase, getExplorerName } from "../../lib/chainConfig"
 
 export default function PurchaseSuccess() {
   const navigate = useNavigate()
   const location = useLocation()
+  const chainId = useChainId()
   const state = location.state as
     | {
         itemName?: string
         txHash?: string
         receiptContract?: string
         receiptTokenId?: string | null
+        chainId?: number
       }
     | null
   const itemName = state?.itemName ?? "your merch"
   const txHash = state?.txHash
   const receiptContract = state?.receiptContract
   const receiptTokenId = state?.receiptTokenId
+  const resolvedChainId = state?.chainId ?? chainId
+  const explorerBase = getExplorerBase(resolvedChainId)
+  const explorerName = getExplorerName(resolvedChainId)
 
   return (
     <motion.div
@@ -45,17 +52,17 @@ export default function PurchaseSuccess() {
         <div className="mt-4 flex flex-col gap-2 text-sm text-white/70">
           {txHash && (
             <a
-              href={`https://sepolia-explorer.base.org/tx/${txHash}`}
+              href={`${explorerBase}/tx/${txHash}`}
               target="_blank"
               rel="noreferrer"
               className="underline hover:text-white"
             >
-              View on BaseScan
+              View on {explorerName}
             </a>
           )}
           {receiptContract && receiptTokenId && (
             <a
-              href={`https://sepolia-explorer.base.org/token/${receiptContract}?a=${receiptTokenId}`}
+              href={`${explorerBase}/token/${receiptContract}?a=${receiptTokenId}`}
               target="_blank"
               rel="noreferrer"
               className="underline hover:text-white"

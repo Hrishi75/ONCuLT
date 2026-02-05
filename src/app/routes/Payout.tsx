@@ -2,6 +2,9 @@ import { motion } from "framer-motion"
 import { useEffect, useMemo, useState } from "react"
 import { useAccount } from "wagmi"
 import { fetchPurchasesAll } from "../../services/marketplace.service"
+import { getExplorerBase, getExplorerName } from "../../lib/chainConfig"
+import { getChainIdForReceiptContract } from "../../lib/receiptContract"
+import { useChainId } from "wagmi"
 
 type Purchase = {
   id: string
@@ -13,6 +16,8 @@ type Purchase = {
   tx_hash?: string | null
   receipt_contract?: string | null
   receipt_token_id?: string | null
+  chain_id?: number | null
+  chain_name?: string | null
   created_at: string
 }
 
@@ -26,11 +31,14 @@ type PurchaseRow = {
   tx_hash?: string | null
   receipt_contract?: string | null
   receipt_token_id?: string | null
+  chain_id?: number | string | null
+  chain_name?: string | null
   created_at: string
 }
 
 export default function Payout() {
   const { isConnected } = useAccount()
+  const chainId = useChainId()
   const [purchases, setPurchases] = useState<Purchase[]>([])
 
   useEffect(() => {
@@ -48,6 +56,11 @@ export default function Payout() {
             tx_hash: row.tx_hash ?? null,
             receipt_contract: row.receipt_contract ?? null,
             receipt_token_id: row.receipt_token_id ?? null,
+            chain_id:
+              row.chain_id !== null && row.chain_id !== undefined
+                ? Number(row.chain_id)
+                : null,
+            chain_name: row.chain_name ?? null,
             created_at: row.created_at,
           }))
         )
@@ -207,6 +220,11 @@ export default function Payout() {
                         ? "Event Organizer Listing"
                         : "Artist / Creator Listing"}
                     </p>
+                    {p.chain_name && (
+                      <p className="text-xs text-cyan-200/70">
+                        {p.chain_name}
+                      </p>
+                    )}
                     <p className="text-xs text-white/40">
                       {new Date(p.created_at).toLocaleString()}
                     </p>
@@ -221,17 +239,30 @@ export default function Payout() {
                     <div className="mt-2 flex flex-col gap-1 text-xs">
                       {p.tx_hash && (
                         <a
-                          href={`https://sepolia-explorer.base.org/tx/${p.tx_hash}`}
+                          href={`${getExplorerBase(
+                            p.chain_id ??
+                              getChainIdForReceiptContract(p.receipt_contract) ??
+                              chainId
+                          )}/tx/${p.tx_hash}`}
                           target="_blank"
                           rel="noreferrer"
                           className="text-purple-300 hover:text-purple-200 underline"
                         >
-                          View Tx
+                          View on{" "}
+                          {getExplorerName(
+                            p.chain_id ??
+                              getChainIdForReceiptContract(p.receipt_contract) ??
+                              chainId
+                          )}
                         </a>
                       )}
                       {p.receipt_contract && p.receipt_token_id && (
                         <a
-                          href={`https://sepolia-explorer.base.org/token/${p.receipt_contract}?a=${p.receipt_token_id}`}
+                          href={`${getExplorerBase(
+                            p.chain_id ??
+                              getChainIdForReceiptContract(p.receipt_contract) ??
+                              chainId
+                          )}/token/${p.receipt_contract}?a=${p.receipt_token_id}`}
                           target="_blank"
                           rel="noreferrer"
                           className="text-purple-300 hover:text-purple-200 underline"

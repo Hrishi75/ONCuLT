@@ -2,58 +2,77 @@ import { useState } from "react"
 import { Link } from "react-router-dom"
 import { ConnectButton } from "@rainbow-me/rainbowkit"
 import { Menu } from "lucide-react"
+import { useChainId } from "wagmi"
+import { getChainLabel } from "../lib/chainConfig"
 
 export default function FloatingNavbar() {
   const [open, setOpen] = useState(false)
+  const chainId = useChainId()
+  const chainLabel = getChainLabel(chainId)
 
   return (
     <div className="fixed top-5 left-1/2 z-50 -translate-x-1/2">
       <div className="relative">
         {/* Main navbar */}
-        <div className="flex items-center gap-4 rounded-full border border-white/10 bg-white/5 px-6 py-3 backdrop-blur-xl shadow-lg shadow-black/40">
-          
-          {/* Logo */}
-          <Link to="/" className="text-lg font-semibold tracking-wide">
-            On<span className="text-purple-400">CuLT</span>
-          </Link>
+        <div className="rounded-[999px] bg-gradient-to-r from-fuchsia-500/30 via-cyan-400/20 to-emerald-400/30 p-[1px] shadow-[0_0_30px_rgba(168,85,247,0.18)]">
+          <div className="flex items-center gap-4 rounded-[999px] bg-[#0a0a0a]/90 px-6 py-3 backdrop-blur-2xl">
+            {/* Logo */}
+            <Link to="/" className="text-lg font-semibold tracking-wide">
+              <span className="text-white">On</span>
+              <span className="bg-gradient-to-r from-fuchsia-400 via-purple-400 to-cyan-300 bg-clip-text text-transparent">
+                CuLT
+              </span>
+            </Link>
 
-          <span className="hidden rounded-full border border-blue-400/40 bg-blue-500/10 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-blue-200 md:inline">
-            Base Sepolia
+          <span className="hidden whitespace-nowrap rounded-full border border-cyan-300/30 bg-cyan-500/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-cyan-200 md:inline">
+            {chainLabel}
           </span>
 
-          {/* Desktop nav */}
-          <nav className="hidden md:flex gap-5 text-sm text-white/70">
-            <Link to="/events" className="hover:text-white transition">
-              Events
-            </Link>
-            <Link to="/marketplace" className="hover:text-white transition">
-              Marketplace
-            </Link>
-            <Link to="/payout" className="hover:text-white transition">
-            Payout
-            </Link>
-          </nav>
+            {/* Desktop nav */}
+            <nav className="hidden md:flex gap-5 text-sm text-white/70">
+              <Link
+                to="/events"
+                className="rounded-full px-2 py-1 transition hover:bg-white/5 hover:text-white"
+              >
+                Events
+              </Link>
+              <Link
+                to="/marketplace"
+                className="rounded-full px-2 py-1 transition hover:bg-white/5 hover:text-white"
+              >
+                Marketplace
+              </Link>
+              <Link
+                to="/payout"
+                className="rounded-full px-2 py-1 transition hover:bg-white/5 hover:text-white"
+              >
+                Payout
+              </Link>
+            </nav>
 
-          {/* Wallet */}
-          <ConnectButton />
+            {/* Wallet */}
+            <div className="flex items-center">
+              <ConnectButton />
+            </div>
 
-          {/* Mobile menu icon */}
-          <button
-            onClick={() => setOpen(!open)}
-            className="md:hidden rounded-full p-2 hover:bg-white/10 transition"
-          >
-            <Menu size={18} />
-          </button>
+            {/* Mobile menu icon */}
+            <button
+              onClick={() => setOpen(!open)}
+              className="md:hidden rounded-full p-2 transition hover:bg-white/10"
+            >
+              <Menu size={18} />
+            </button>
+          </div>
         </div>
 
         {/* Mobile dropdown */}
         {open && (
-          <div className="absolute left-1/2 top-[110%] -translate-x-1/2 rounded-xl border border-white/10 bg-white/5 p-4 backdrop-blur-xl shadow-xl">
+          <div className="absolute left-1/2 top-[110%] -translate-x-1/2 rounded-2xl border border-white/10 bg-[#0a0a0a]/90 p-4 backdrop-blur-2xl shadow-[0_20px_60px_rgba(0,0,0,0.45)]">
             <nav className="flex flex-col gap-3 text-sm text-white/80">
               <Link
                 to="/events"
                 onClick={() => setOpen(false)}
-                className="hover:text-white transition"
+                className="rounded-lg px-3 py-2 transition hover:bg-white/5 hover:text-white"
               >
                 Events
               </Link>
@@ -61,12 +80,12 @@ export default function FloatingNavbar() {
               <Link
                 to="/marketplace"
                 onClick={() => setOpen(false)}
-                className="hover:text-white transition"
+                className="rounded-lg px-3 py-2 transition hover:bg-white/5 hover:text-white"
               >
                 Marketplace
               </Link>
 
-              <span className="cursor-not-allowed text-white/40">
+              <span className="rounded-lg px-3 py-2 text-white/40">
                 Payout
               </span>
             </nav>
