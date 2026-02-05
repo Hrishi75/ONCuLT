@@ -14,6 +14,7 @@ type Purchase = {
   listing_type: "artist" | "organizer"
   platform_fee_pct: number
   tx_hash?: string | null
+  receipt_tx_hash?: string | null
   receipt_contract?: string | null
   receipt_token_id?: string | null
   chain_id?: number | null
@@ -29,6 +30,7 @@ type PurchaseRow = {
   listing_type: "artist" | "organizer"
   platform_fee_pct: number | string | null
   tx_hash?: string | null
+  receipt_tx_hash?: string | null
   receipt_contract?: string | null
   receipt_token_id?: string | null
   chain_id?: number | string | null
@@ -54,6 +56,7 @@ export default function Payout() {
             listing_type: row.listing_type,
             platform_fee_pct: Number(row.platform_fee_pct ?? 0),
             tx_hash: row.tx_hash ?? null,
+            receipt_tx_hash: row.receipt_tx_hash ?? null,
             receipt_contract: row.receipt_contract ?? null,
             receipt_token_id: row.receipt_token_id ?? null,
             chain_id:
@@ -268,6 +271,20 @@ export default function Payout() {
                           className="text-purple-300 hover:text-purple-200 underline"
                         >
                           View Receipt NFT
+                        </a>
+                      )}
+                      {p.receipt_tx_hash && (
+                        <a
+                          href={`${getExplorerBase(
+                            p.chain_id ??
+                              getChainIdForReceiptContract(p.receipt_contract) ??
+                              chainId
+                          )}/tx/${p.receipt_tx_hash}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="text-purple-300 hover:text-purple-200 underline"
+                        >
+                          View Receipt Tx
                         </a>
                       )}
                     </div>

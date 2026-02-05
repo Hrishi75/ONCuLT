@@ -7,10 +7,11 @@ export default function PurchaseSuccess() {
   const navigate = useNavigate()
   const location = useLocation()
   const chainId = useChainId()
-  const state = location.state as
+      const state = location.state as
     | {
         itemName?: string
         txHash?: string
+        receiptTxHash?: string
         receiptContract?: string
         receiptTokenId?: string | null
         chainId?: number
@@ -18,6 +19,7 @@ export default function PurchaseSuccess() {
     | null
   const itemName = state?.itemName ?? "your merch"
   const txHash = state?.txHash
+  const receiptTxHash = state?.receiptTxHash
   const receiptContract = state?.receiptContract
   const receiptTokenId = state?.receiptTokenId
   const resolvedChainId = state?.chainId ?? chainId
@@ -58,6 +60,16 @@ export default function PurchaseSuccess() {
               className="underline hover:text-white"
             >
               View on {explorerName}
+            </a>
+          )}
+          {receiptTxHash && receiptTxHash !== txHash && (
+            <a
+              href={`${explorerBase}/tx/${receiptTxHash}`}
+              target="_blank"
+              rel="noreferrer"
+              className="underline hover:text-white"
+            >
+              View Receipt Tx
             </a>
           )}
           {receiptContract && receiptTokenId && (

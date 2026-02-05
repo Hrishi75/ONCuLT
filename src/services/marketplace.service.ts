@@ -3,6 +3,7 @@ import { supabase } from "../lib/supabase"
 export type CreateItemPayload = {
   name: string
   price: string
+  price_usdc?: string | null
   event: string
   description: string
   listing_type: "artist" | "organizer"
@@ -22,6 +23,7 @@ export type CreatePurchasePayload = {
   buyer_address: string
   platform_fee_pct: number
   tx_hash?: string | null
+  receipt_tx_hash?: string | null
   receipt_contract?: string | null
   receipt_token_id?: string | null
   receipt_token_uri?: string | null
