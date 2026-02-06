@@ -48,13 +48,14 @@ const INITIAL_EVENTS: EventType[] = [
   {
     id: "ethconf",
     name: "ETH Conference 2026",
-    location: "Berlin",
+    location: "New York City",
     merch: ["Conference Hoodie", "Genesis NFT Badge"],
     sideEvents: [
       { name: "L2 Builders Meetup", merch: ["Rollup Tee", "Sticker Pack"] },
       { name: "ZK Night", merch: ["ZK NFT", "Limited Poster"] },
     ],
     owner: "0x0000000000000000000000000000000000000000",
+    imageUrls: ["/Ethconf2026.png"],
   },
 ]
 

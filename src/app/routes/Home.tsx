@@ -58,7 +58,7 @@ export default function Home() {
             onClick={() => navigate("/marketplace")}
             className="rounded-full bg-purple-500 px-8 py-3 text-sm font-semibold hover:bg-purple-600 transition"
           >
-            Merchstore
+            Marketplace
           </button>
         </motion.div>
       </section>

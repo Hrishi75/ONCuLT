@@ -82,6 +82,7 @@ const INITIAL_ITEMS: Item[] = [
     edition: "limited",
     supply: 200,
     owner: "0xB069d15B2E140A09E561Ea99Db5eC85f90f0133d",
+    imageUrls: ["/hoodie.png"],
   },
 ]
 
@@ -543,7 +544,7 @@ export default function Marketplace() {
         <div className="text-center">
           <h1 className="text-4xl font-bold sm:text-5xl md:text-6xl">
             <span className="bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent">
-              Merchstore
+              Marketplace
             </span>
           </h1>
           <p className="mt-3 text-sm text-white/60 sm:text-base">
@@ -697,6 +698,17 @@ export default function Marketplace() {
                       USDC Price: {selectedItem.priceUsdc}
                     </p>
                   )}
+
+                  <div className="mt-4 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/70">
+                    <p className="text-[11px] uppercase tracking-wide text-white/40">
+                      Shipping
+                    </p>
+                    <ul className="mt-2 space-y-1">
+                      <li>- International shipping available</li>
+                      <li>- Expedited shipping available</li>
+                      <li>- Phone number required for shipping</li>
+                    </ul>
+                  </div>
 
                   {selectedItem.edition !== "open" && (
                     <div className="mt-4 rounded-lg border border-purple-500/30 bg-purple-500/10 px-3 py-2 text-sm text-purple-300">
