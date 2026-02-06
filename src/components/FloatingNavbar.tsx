@@ -43,6 +43,12 @@ export default function FloatingNavbar() {
                 Marketplace
               </Link>
               <Link
+                to="/community"
+                className="rounded-full px-2 py-1 transition hover:bg-white/5 hover:text-white"
+              >
+                Community
+              </Link>
+              <Link
                 to="/payout"
                 className="rounded-full px-2 py-1 transition hover:bg-white/5 hover:text-white"
               >
@@ -83,6 +89,13 @@ export default function FloatingNavbar() {
                 className="rounded-lg px-3 py-2 transition hover:bg-white/5 hover:text-white"
               >
                 Marketplace
+              </Link>
+              <Link
+                to="/community"
+                onClick={() => setOpen(false)}
+                className="rounded-lg px-3 py-2 transition hover:bg-white/5 hover:text-white"
+              >
+                Community
               </Link>
 
               <span className="rounded-lg px-3 py-2 text-white/40">
