@@ -218,11 +218,11 @@ export default function Events() {
             className="group relative rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl hover:shadow-xl hover:shadow-purple-500/10"
           >
             {event.imageUrls && event.imageUrls.length > 0 && (
-              <div className="mb-4 overflow-hidden rounded-xl border border-white/10">
+              <div className="mb-4 overflow-hidden rounded-xl border border-white/10 bg-black/40">
                 <img
                   src={event.imageUrls[0]}
                   alt={event.name}
-                  className="h-40 w-full object-cover"
+                  className="h-40 w-full object-contain"
                   loading="lazy"
                 />
               </div>
@@ -383,96 +383,106 @@ export default function Events() {
               initial={{ scale: 0.95, y: 20 }}
               animate={{ scale: 1, y: 0 }}
               exit={{ scale: 0.95, y: 20 }}
-              className="w-full max-w-2xl rounded-2xl bg-[#0b0b0b] p-6"
+              className="w-full max-w-4xl rounded-2xl bg-[#0b0b0b] p-6"
             >
-              <h2 className="text-2xl font-semibold">{selectedEvent.name}</h2>
-              <p className="mt-1 text-sm text-white/60">
-                {selectedEvent.location}
-              </p>
-
-              {selectedEvent.imageUrls &&
-                selectedEvent.imageUrls.length > 0 && (
-                  <div className="mt-6">
-                    <div className="overflow-hidden rounded-xl border border-white/10">
-                      <img
-                        src={selectedEvent.imageUrls[0]}
-                        alt={selectedEvent.name}
-                        className="h-56 w-full object-cover"
-                        loading="lazy"
-                      />
-                    </div>
-
-                    {selectedEvent.imageUrls.length > 1 && (
-                      <div className="mt-3 grid grid-cols-3 gap-3">
-                        {selectedEvent.imageUrls.slice(1).map((url) => (
-                          <div
-                            key={url}
-                            className="overflow-hidden rounded-lg border border-white/10"
-                          >
-                            <img
-                              src={url}
-                              alt={`${selectedEvent.name} preview`}
-                              className="h-20 w-full object-cover"
-                              loading="lazy"
-                            />
-                          </div>
-                        ))}
+              <div className="flex flex-col gap-6 md:flex-row">
+                <div className="md:w-1/2">
+                  {selectedEvent.imageUrls &&
+                  selectedEvent.imageUrls.length > 0 ? (
+                    <div>
+                      <div className="overflow-hidden rounded-xl border border-white/10 bg-black/40">
+                        <img
+                          src={selectedEvent.imageUrls[0]}
+                          alt={selectedEvent.name}
+                          className="h-64 w-full object-contain md:h-80"
+                          loading="lazy"
+                        />
                       </div>
-                    )}
-                  </div>
-                )}
 
-              <div className="mt-6">
-                <p className="mb-2 text-xs uppercase tracking-wide text-white/40">
-                  Main Event Merch
-                </p>
-                <ul className="space-y-1 text-sm text-white/80">
-                  {selectedEvent.merch.map((m) => (
-                    <li key={m}>• {m}</li>
-                  ))}
-                </ul>
-              </div>
+                      {selectedEvent.imageUrls.length > 1 && (
+                        <div className="mt-3 grid grid-cols-3 gap-3">
+                          {selectedEvent.imageUrls.slice(1).map((url) => (
+                            <div
+                              key={url}
+                              className="overflow-hidden rounded-lg border border-white/10 bg-black/40"
+                            >
+                              <img
+                                src={url}
+                                alt={`${selectedEvent.name} preview`}
+                                className="h-20 w-full object-contain"
+                                loading="lazy"
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="flex h-64 items-center justify-center rounded-xl border border-white/10 bg-gradient-to-br from-white/5 to-white/0 text-sm text-white/40 md:h-80">
+                      No image available
+                    </div>
+                  )}
+                </div>
 
-              {selectedEvent.sideEvents.length > 0 && (
-                <div className="mt-8 space-y-4">
-                  <p className="text-xs uppercase tracking-wide text-white/40">
-                    Side Events
+                <div className="md:w-1/2">
+                  <h2 className="text-2xl font-semibold">{selectedEvent.name}</h2>
+                  <p className="mt-1 text-sm text-white/60">
+                    {selectedEvent.location}
                   </p>
 
-                  {selectedEvent.sideEvents.map((side) => (
-                    <div
-                      key={side.name}
-                      className="rounded-xl border border-white/10 bg-white/5 p-4"
-                    >
-                      <p className="font-medium">{side.name}</p>
-                      <ul className="mt-2 space-y-1 text-sm text-white/70">
-                        {side.merch.map((m) => (
-                          <li key={m}>• {m}</li>
-                        ))}
-                      </ul>
+                  <div className="mt-6">
+                    <p className="mb-2 text-xs uppercase tracking-wide text-white/40">
+                      Main Event Merch
+                    </p>
+                    <ul className="space-y-1 text-sm text-white/80">
+                      {selectedEvent.merch.map((m) => (
+                        <li key={m}>- {m}</li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  {selectedEvent.sideEvents.length > 0 && (
+                    <div className="mt-8 space-y-4">
+                      <p className="text-xs uppercase tracking-wide text-white/40">
+                        Side Events
+                      </p>
+
+                      {selectedEvent.sideEvents.map((side) => (
+                        <div
+                          key={side.name}
+                          className="rounded-xl border border-white/10 bg-white/5 p-4"
+                        >
+                          <p className="font-medium">{side.name}</p>
+                          <ul className="mt-2 space-y-1 text-sm text-white/70">
+                            {side.merch.map((m) => (
+                              <li key={m}>- {m}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      ))}
                     </div>
-                  ))}
+                  )}
+
+                  <div className="mt-8 grid gap-3 sm:grid-cols-2">
+                    <button
+                      onClick={() => {
+                        setSelectedEvent(null)
+                        navigate("/marketplace")
+                      }}
+                      className="w-full rounded-xl bg-purple-500 py-2.5 text-sm font-semibold hover:bg-purple-600 transition"
+                    >
+                      Browse Marketplace
+                    </button>
+                    <button
+                      onClick={() => setSelectedEvent(null)}
+                      className="w-full rounded-xl border border-white/20 py-2.5 text-sm hover:bg-white/5 transition"
+                    >
+                      Close
+                    </button>
+                  </div>
                 </div>
-              )}
-
-              <div className="mt-8 flex flex-col gap-3">
-                <button
-                  onClick={() => {
-                    setSelectedEvent(null)
-                    navigate("/marketplace")
-                  }}
-                  className="w-full rounded-xl bg-purple-500 py-2.5 text-sm font-semibold hover:bg-purple-600 transition"
-                >
-                  Buy / Sell on Marketplace
-                </button>
-
-                <button
-                  onClick={() => setSelectedEvent(null)}
-                  className="w-full rounded-xl border border-white/20 py-2.5 text-sm hover:bg-white/5 transition"
-                >
-                  Close
-                </button>
               </div>
+
             </motion.div>
           </motion.div>
         )}
