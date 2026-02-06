@@ -1,0 +1,2 @@
+export const PLATFORM_FEE_ADDRESS =
+  "0x43Fb3282a5F5B77Ec28e5F4B8b7FF8ab7F310BEA" as `0x${string}`

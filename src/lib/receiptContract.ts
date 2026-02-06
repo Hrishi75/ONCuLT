@@ -1,7 +1,7 @@
 export const BASE_SEPOLIA_RECEIPT_CONTRACT =
-  "0x2181D635863e0B51d2c76D9d74271CC23a4101FB" as `0x${string}`
+  "0x94749d18E2C4E7a5DeA9874D78409cEB46Df1b25" as `0x${string}`
 export const ARC_TESTNET_RECEIPT_CONTRACT =
-  "0x2181D635863e0B51d2c76D9d74271CC23a4101FB" as `0x${string}` | ""
+  "0x659390FAAc045036B262E2688539c3a4f3181105" as `0x${string}` | ""
 
 export const getReceiptContractAddress = (chainId?: number) => {
   if (chainId === 5042002) {
@@ -74,6 +74,7 @@ export const RECEIPT_CONTRACT_ABI = [
       { internalType: "uint256", name: "itemId", type: "uint256" },
       { internalType: "address", name: "seller", type: "address" },
       { internalType: "uint256", name: "priceWei", type: "uint256" },
+      { internalType: "uint16", name: "feeBps", type: "uint16" },
       { internalType: "string", name: "tokenURI", type: "string" },
     ],
     name: "mintReceipt",

@@ -1,7 +1,14 @@
 import { useEffect, useState } from "react"
 import { motion, AnimatePresence } from "framer-motion"
 import { useNavigate } from "react-router-dom"
-import { useAccount, useChainId, usePublicClient, useWriteContract } from "wagmi"
+import {
+  useAccount,
+  useChainId,
+  usePublicClient,
+  useSwitchChain,
+  useWriteContract,
+  useSignTypedData,
+} from "wagmi"
 import { decodeEventLog, keccak256, parseEther, toHex } from "viem"
 import toast from "react-hot-toast"
 import {
@@ -16,6 +23,18 @@ import {
   getReceiptContractAddress,
 } from "../../lib/receiptContract"
 import { getChainLabel } from "../../lib/chainConfig"
+import { PLATFORM_FEE_ADDRESS } from "../../lib/platform"
+import {
+  GATEWAY_MINTER_ADDRESS,
+  GATEWAY_WALLET_ADDRESS,
+  USDC_ADDRESSES,
+  gatewayMinterAbi,
+  gatewayWalletAbi,
+  gatewayTypedData,
+  buildBurnIntent,
+  serializeBurnIntent,
+} from "../../lib/circleGateway"
+import { arcTestnet } from "../../lib/chainConfig"
 
 /* ================= TYPES ================= */
 
@@ -26,6 +45,7 @@ type MarketplaceItemRow = {
   id: string
   name: string
   price: string
+  price_usdc?: string | null
   event: string
   description: string
   listing_type?: ListingType | null
@@ -39,6 +59,7 @@ type Item = {
   id: string
   name: string
   price: string
+  priceUsdc?: string
   event: string
   description: string
   listingType?: ListingType
@@ -55,11 +76,12 @@ const INITIAL_ITEMS: Item[] = [
     id: "hoodie-eth",
     name: "ETH Conf Hoodie",
     price: "0.0005 ETH",
+    priceUsdc: "1.25",
     event: "ETH Conference 2026",
     description: "Official ETH Conf 2026 hoodie",
     edition: "limited",
     supply: 200,
-    owner: "0x0000000000000000000000000000000000000000",
+    owner: "0xB069d15B2E140A09E561Ea99Db5eC85f90f0133d",
   },
 ]
 
@@ -71,6 +93,10 @@ export default function Marketplace() {
   const chainId = useChainId()
   const { writeContractAsync, isPending: isMinting } = useWriteContract()
   const publicClient = usePublicClient()
+  const basePublicClient = usePublicClient({ chainId: 84532 })
+  const arcPublicClient = usePublicClient({ chainId: arcTestnet.id })
+  const { switchChainAsync } = useSwitchChain()
+  const { signTypedDataAsync } = useSignTypedData()
 
   const [items, setItems] = useState<Item[]>(INITIAL_ITEMS)
   const [selectedItem, setSelectedItem] = useState<Item | null>(null)
@@ -79,12 +105,14 @@ export default function Marketplace() {
   /* Form state */
   const [name, setName] = useState("")
   const [price, setPrice] = useState("")
+  const [priceUsdc, setPriceUsdc] = useState("")
   const [event, setEvent] = useState("")
   const [description, setDescription] = useState("")
   const [listingType, setListingType] = useState<ListingType>("artist")
   const [edition, setEdition] = useState<EditionType>("open")
   const [supply, setSupply] = useState("")
   const [imageFiles, setImageFiles] = useState<File[]>([])
+  const [settleOnArc, setSettleOnArc] = useState(true)
 
   /* ================= ACTIONS ================= */
 
@@ -94,6 +122,7 @@ export default function Marketplace() {
       id: item.id,
       name: item.name,
       price: item.price,
+      priceUsdc: item.price_usdc ?? "",
       event: item.event,
       description: item.description,
       listingType: item.listing_type ?? "artist",
@@ -131,6 +160,7 @@ export default function Marketplace() {
       const payload = {
         name,
         price,
+        price_usdc: priceUsdc || null,
         event,
         description,
         listing_type: listingType,
@@ -149,6 +179,7 @@ export default function Marketplace() {
 
     setName("")
     setPrice("")
+    setPriceUsdc("")
     setEvent("")
     setDescription("")
     setListingType("artist")
@@ -176,6 +207,279 @@ export default function Marketplace() {
     return parsed
   }
 
+  const parseUsdcAmount = (value: string) => {
+    const cleaned = value.replace(/usdc/i, "").trim()
+    if (!cleaned) {
+      throw new Error("USDC price is missing")
+    }
+    const parsed = Number.parseFloat(cleaned)
+    if (!Number.isFinite(parsed)) {
+      throw new Error("Invalid USDC amount format")
+    }
+    return BigInt(Math.round(parsed * 1_000_000))
+  }
+
+  const createSalt = () => {
+    const bytes = new Uint8Array(32)
+    crypto.getRandomValues(bytes)
+    return `0x${Array.from(bytes)
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("")}` as `0x${string}`
+  }
+
+  const handleGatewayPayment = async (item: Item) => {
+    if (!isConnected || !address) {
+      toast.error("Please connect your wallet to pay")
+      return null
+    }
+
+    const sourceChainId = chainId
+    const destinationChainId = settleOnArc
+      ? arcTestnet.id
+      : sourceChainId
+
+    if (
+      !sourceChainId ||
+      !(sourceChainId in USDC_ADDRESSES)
+    ) {
+      toast.error("Unsupported network for Gateway")
+      return null
+    }
+    if (
+      !destinationChainId ||
+      !(destinationChainId in USDC_ADDRESSES)
+    ) {
+      toast.error("Destination chain not supported for Gateway")
+      return null
+    }
+
+    if (!item.priceUsdc) {
+      throw new Error("USDC price is not set for this item")
+    }
+    const usdcAmount = parseUsdcAmount(item.priceUsdc)
+    const usdcAddress = USDC_ADDRESSES[sourceChainId]
+
+    toast.loading("Approving USDC...", { id: "gateway" })
+    await writeContractAsync({
+      address: usdcAddress,
+      abi: [
+        {
+          type: "function",
+          name: "approve",
+          inputs: [
+            { name: "spender", type: "address" },
+            { name: "amount", type: "uint256" },
+          ],
+          outputs: [{ name: "", type: "bool" }],
+          stateMutability: "nonpayable",
+        },
+      ],
+      functionName: "approve",
+      args: [GATEWAY_WALLET_ADDRESS, usdcAmount],
+    })
+
+    toast.loading("Depositing to Gateway...", { id: "gateway" })
+    await writeContractAsync({
+      address: GATEWAY_WALLET_ADDRESS,
+      abi: gatewayWalletAbi,
+      functionName: "deposit",
+      args: [usdcAddress, usdcAmount],
+    })
+
+    const platformFeePct =
+      item.listingType === "organizer" ? 10 : 5
+    const feeAmount = (usdcAmount * BigInt(platformFeePct)) / 100n
+    const sellerAmount = usdcAmount - feeAmount
+
+    const depositor = address as `0x${string}`
+    const sellerIntent = buildBurnIntent({
+      sourceChainId,
+      destinationChainId,
+      depositor,
+      recipient: item.owner as `0x${string}`,
+      amountUsdc: sellerAmount,
+      salt: createSalt(),
+    })
+    const sellerIntentForApi = serializeBurnIntent(sellerIntent)
+
+    const feeIntent =
+      feeAmount > 0n
+        ? buildBurnIntent({
+            sourceChainId,
+            destinationChainId,
+          depositor,
+          recipient: PLATFORM_FEE_ADDRESS,
+            amountUsdc: feeAmount,
+            salt: createSalt(),
+          })
+        : null
+    const feeIntentForApi = feeIntent
+      ? serializeBurnIntent(feeIntent)
+      : null
+
+    toast.loading("Signing intent...", { id: "gateway" })
+    const sellerSig = await signTypedDataAsync({
+      domain: gatewayTypedData.domain,
+      types: gatewayTypedData.types,
+      primaryType: "BurnIntent",
+      message: sellerIntent,
+    })
+    const feeSig =
+      feeIntent
+        ? await signTypedDataAsync({
+            domain: gatewayTypedData.domain,
+            types: gatewayTypedData.types,
+            primaryType: "BurnIntent",
+            message: feeIntent,
+          })
+        : null
+
+    toast.loading("Calling Gateway...", { id: "gateway" })
+    const resp = await fetch(
+      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/circle-gateway-transfer`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+        },
+          body: JSON.stringify(
+            [
+              { burnIntent: sellerIntentForApi, signature: sellerSig },
+              ...(feeIntentForApi && feeSig
+                ? [{ burnIntent: feeIntentForApi, signature: feeSig }]
+                : []),
+            ]
+          ),
+        }
+      )
+
+    if (!resp.ok) {
+      const err = await resp.text()
+      throw new Error(`Gateway API failed: ${err}`)
+    }
+
+    const data = await resp.json()
+    const responses = Array.isArray(data) ? data : [data]
+    const sellerAttestation =
+      responses[0]?.attestation ?? responses[0]?.attestationPayload
+    const sellerAttestationSig =
+      responses[0]?.signature ?? responses[0]?.attestationSignature
+
+    if (!sellerAttestation || !sellerAttestationSig) {
+      throw new Error("Gateway response missing attestation")
+    }
+
+    if (sourceChainId !== destinationChainId) {
+      toast.loading(
+        settleOnArc ? "Switching to Arc Testnet..." : "Switching network...",
+        { id: "gateway" }
+      )
+      await switchChainAsync({ chainId: destinationChainId })
+    }
+
+    toast.loading(
+      settleOnArc ? "Minting on Arc..." : "Minting on destination...",
+      { id: "gateway" }
+    )
+    const txHash = (await writeContractAsync({
+      address: GATEWAY_MINTER_ADDRESS,
+      abi: gatewayMinterAbi,
+      functionName: "gatewayMint",
+      args: [sellerAttestation, sellerAttestationSig],
+    })) as `0x${string}`
+
+    if (responses.length > 1) {
+      const feeAttestation =
+        responses[1]?.attestation ?? responses[1]?.attestationPayload
+      const feeSignatureResp =
+        responses[1]?.signature ?? responses[1]?.attestationSignature
+      if (feeAttestation && feeSignatureResp) {
+        await writeContractAsync({
+          address: GATEWAY_MINTER_ADDRESS,
+          abi: gatewayMinterAbi,
+          functionName: "gatewayMint",
+          args: [feeAttestation, feeSignatureResp],
+        })
+      }
+    }
+
+    // Mint receipt NFT on destination chain (no ETH value)
+    let receiptTokenId: string | null = null
+    let receiptTxHash: `0x${string}` | undefined
+    let receiptContract: `0x${string}` | undefined
+    try {
+      receiptContract = getReceiptContractAddress(destinationChainId)
+      if (!receiptContract) {
+        throw new Error("Receipt contract not set for destination")
+      }
+
+      const tokenUri = buildTokenUri(item, address)
+      const onchainItemId = toOnchainItemId(item.id)
+
+      receiptTxHash = (await writeContractAsync({
+        address: receiptContract,
+        abi: RECEIPT_CONTRACT_ABI,
+        functionName: "mintReceipt",
+        args: [
+          address,
+          onchainItemId,
+          item.owner,
+          0n,
+          0,
+          tokenUri,
+        ],
+      })) as `0x${string}`
+
+      const destinationClient =
+        destinationChainId === arcTestnet.id
+          ? arcPublicClient
+          : basePublicClient ?? publicClient
+
+      if (!destinationClient) {
+        throw new Error("Public client not available")
+      }
+      const receipt = await destinationClient.waitForTransactionReceipt({
+        hash: receiptTxHash,
+      })
+      const receiptLog = receipt.logs.find((log) => {
+        try {
+          decodeEventLog({
+            abi: RECEIPT_CONTRACT_ABI,
+            data: log.data,
+            topics: log.topics,
+          })
+          return true
+        } catch {
+          return false
+        }
+      })
+      if (receiptLog) {
+        const decoded = decodeEventLog({
+          abi: RECEIPT_CONTRACT_ABI,
+          data: receiptLog.data,
+          topics: receiptLog.topics,
+        })
+        const eventTokenId = decoded.args?.tokenId
+        if (typeof eventTokenId === "bigint") {
+          receiptTokenId = eventTokenId.toString()
+        }
+      }
+    } catch (receiptError) {
+      console.error("Receipt mint failed after Gateway:", receiptError)
+      toast.error("Receipt mint failed on destination chain")
+    }
+
+    toast.success("USDC payment completed", { id: "gateway" })
+    return {
+      txHash,
+      chainId: destinationChainId,
+      receiptContract,
+      receiptTokenId,
+      receiptTxHash,
+    }
+  }
+
   const toWei = (value: string) => {
     const cleaned = value.replace(/eth/i, "").trim()
     return parseEther(cleaned)
@@ -186,20 +490,31 @@ export default function Marketplace() {
   }
 
   const buildTokenUri = (item: Item, buyer: string) => {
+    const logoUrl =
+      "https://rsccazzxaigxjuhnedoi.supabase.co/storage/v1/object/public/public-assets/oncultlogo.svg"
+    const attributes = [
+      { trait_type: "Item", value: item.name },
+      { trait_type: "Price", value: item.price },
+      {
+        trait_type: "Listing Type",
+        value: item.listingType ?? "artist",
+      },
+      { trait_type: "Seller", value: item.owner },
+      { trait_type: "Buyer", value: buyer },
+    ]
+
+    if (item.priceUsdc) {
+      attributes.push({
+        trait_type: "USDC Price",
+        value: item.priceUsdc,
+      })
+    }
+
     const metadata = {
       name: `Oncult Receipt - ${item.name}`,
       description: "Proof of purchase for Oncult marketplace.",
-      image: item.imageUrls?.[0] ?? "",
-      attributes: [
-        { trait_type: "Item", value: item.name },
-        { trait_type: "Price", value: item.price },
-        {
-          trait_type: "Listing Type",
-          value: item.listingType ?? "artist",
-        },
-        { trait_type: "Seller", value: item.owner },
-        { trait_type: "Buyer", value: buyer },
-      ],
+      image: logoUrl,
+      attributes,
     }
 
     return `data:application/json;base64,${toBase64(
@@ -300,6 +615,11 @@ export default function Marketplace() {
                 {item.edition}
               </span>
             </div>
+            {item.priceUsdc && (
+              <p className="mt-2 text-xs text-cyan-200/80">
+                USDC: {item.priceUsdc}
+              </p>
+            )}
 
             <button
               onClick={() => setSelectedItem(item)}
@@ -332,6 +652,11 @@ export default function Marketplace() {
               <p className="mt-4 text-sm text-white/70">
                 {selectedItem.description}
               </p>
+              {selectedItem.priceUsdc && (
+                <p className="mt-3 text-sm text-cyan-200/80">
+                  USDC Price: {selectedItem.priceUsdc}
+                </p>
+              )}
 
               {selectedItem.imageUrls &&
                 selectedItem.imageUrls.length > 0 && (
@@ -384,7 +709,7 @@ export default function Marketplace() {
                   let txHash: `0x${string}` | undefined
                   let tokenId: string | null = null
                   let tokenUri: string | undefined
-                  let receiptContract: `0x${string}` | undefined
+                    let receiptContract: `0x${string}` | undefined
 
                   try {
                     receiptContract = getReceiptContractAddress(chainId)
@@ -396,6 +721,7 @@ export default function Marketplace() {
                     const priceWei = toWei(selectedItem.price)
                     const platformFeePct =
                       selectedItem.listingType === "organizer" ? 10 : 5
+                    const feeBps = platformFeePct * 100
 
                     tokenUri = buildTokenUri(selectedItem, address)
                     const onchainItemId = toOnchainItemId(selectedItem.id)
@@ -410,6 +736,7 @@ export default function Marketplace() {
                         onchainItemId,
                         selectedItem.owner,
                         priceWei,
+                        feeBps,
                         tokenUri,
                       ],
                     })) as `0x${string}`
@@ -495,6 +822,77 @@ export default function Marketplace() {
                 {isMinting ? "Minting..." : "Buy Item"}
               </button>
 
+              <button
+                onClick={async () => {
+                  if (!selectedItem) return
+                  try {
+                    const result = await handleGatewayPayment(selectedItem)
+                    if (!result?.txHash) return
+
+                    try {
+                      await createPurchaseDB({
+                        item_id: selectedItem.id,
+                        item_name: selectedItem.name,
+                        price_display: selectedItem.priceUsdc
+                          ? `${selectedItem.priceUsdc} USDC`
+                          : "USDC",
+                        price_eth: 0,
+                        listing_type: selectedItem.listingType ?? "artist",
+                        seller_address: selectedItem.owner,
+                        buyer_address: address ?? "",
+                        platform_fee_pct:
+                          selectedItem.listingType === "organizer" ? 10 : 5,
+                        tx_hash: result.txHash,
+                        receipt_tx_hash: result.receiptTxHash ?? null,
+                        receipt_contract: result.receiptContract ?? null,
+                        receipt_token_id: result.receiptTokenId ?? null,
+                        receipt_token_uri: null,
+                        chain_id: result.chainId,
+                        chain_name: getChainLabel(result.chainId),
+                      })
+                    } catch (dbError) {
+                      console.error("Failed to store Gateway purchase:", dbError)
+                    }
+
+                    setSelectedItem(null)
+                    navigate("/purchase-success", {
+                      state: {
+                        itemName: selectedItem.name,
+                        txHash: result.txHash,
+                        receiptTxHash: result.receiptTxHash ?? null,
+                        receiptContract: result.receiptContract ?? null,
+                        receiptTokenId: result.receiptTokenId ?? null,
+                        chainId: result.chainId,
+                      },
+                    })
+                  } catch (error) {
+                    console.error(error)
+                    toast.error("Gateway payment failed")
+                    toast.dismiss("gateway")
+                  }
+                }}
+                className="mt-3 w-full rounded-xl border border-white/20 py-2.5 text-sm hover:bg-white/5 transition"
+              >
+                Pay with USDC (Gateway)
+              </button>
+
+              <div className="mt-3 flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/70">
+                <span>Settle on Arc</span>
+                <button
+                  type="button"
+                  onClick={() => setSettleOnArc((prev) => !prev)}
+                  className={`relative h-6 w-11 rounded-full transition ${
+                    settleOnArc ? "bg-cyan-500/70" : "bg-white/10"
+                  }`}
+                >
+                  <span
+                    className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition ${
+                      settleOnArc ? "left-5" : "left-0.5"
+                    }`}
+                  />
+                </button>
+              </div>
+
             </motion.div>
           </motion.div>
         )}
@@ -531,6 +929,13 @@ export default function Marketplace() {
                 placeholder="Price"
                 value={price}
                 onChange={(e) => setPrice(e.target.value)}
+                className="mb-3 w-full rounded-lg bg-white/5 p-2"
+              />
+
+              <input
+                placeholder="USDC Price"
+                value={priceUsdc}
+                onChange={(e) => setPriceUsdc(e.target.value)}
                 className="mb-3 w-full rounded-lg bg-white/5 p-2"
               />
 
