@@ -10,6 +10,8 @@ export type CreateEventPayload = {
   }[]
   owner_address: string
   image_urls?: string[]
+  start_at?: string | null
+  end_at?: string | null
 }
 
 export async function createEventDB(payload: CreateEventPayload) {

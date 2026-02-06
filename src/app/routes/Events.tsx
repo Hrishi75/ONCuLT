@@ -22,10 +22,14 @@ type SideEvent = {
   merch: string[]
 }
 
+type EventStatus = "upcoming" | "ongoing" | "ended"
+
 type EventType = {
   id: string
   name: string
   location: string
+  startAt?: string
+  endAt?: string
   merch: string[]
   sideEvents: SideEvent[]
   owner: string
@@ -36,6 +40,8 @@ type EventRow = {
   id: string
   name: string
   location: string
+  start_at?: string | null
+  end_at?: string | null
   merch?: string[] | null
   side_events?: SideEvent[] | null
   owner_address: string
@@ -44,11 +50,37 @@ type EventRow = {
 
 /* ================= INITIAL DATA ================= */
 
+const STATUS_STYLES: Record<
+  EventStatus,
+  { label: string; className: string; dot: string }
+> = {
+  upcoming: {
+    label: "Upcoming",
+    className:
+      "border-amber-500/40 bg-amber-500/10 text-amber-200 shadow-[0_0_12px_rgba(245,158,11,0.35)]",
+    dot: "bg-amber-300",
+  },
+  ongoing: {
+    label: "Ongoing",
+    className:
+      "border-emerald-500/40 bg-emerald-500/10 text-emerald-200 shadow-[0_0_12px_rgba(16,185,129,0.35)]",
+    dot: "bg-emerald-300",
+  },
+  ended: {
+    label: "Ended",
+    className:
+      "border-white/20 bg-white/5 text-white/60 shadow-[0_0_12px_rgba(255,255,255,0.12)]",
+    dot: "bg-white/50",
+  },
+}
+
 const INITIAL_EVENTS: EventType[] = [
   {
     id: "ethconf",
     name: "ETH Conference 2026",
     location: "New York City",
+    startAt: "2026-02-05T09:00",
+    endAt: "2026-02-07T18:00",
     merch: ["Conference Hoodie", "Genesis NFT Badge"],
     sideEvents: [
       { name: "L2 Builders Meetup", merch: ["Rollup Tee", "Sticker Pack"] },
@@ -72,11 +104,26 @@ export default function Events() {
   // form state
   const [eventName, setEventName] = useState("")
   const [location, setLocation] = useState("")
+  const [startAt, setStartAt] = useState("")
+  const [endAt, setEndAt] = useState("")
   const [mainMerch, setMainMerch] = useState("")
   const [sideEvents, setSideEvents] = useState<SideEventForm[]>([])
   const [imageFiles, setImageFiles] = useState<File[]>([])
 
   /* ================= HELPERS ================= */
+  const getStatusFromDates = (
+    start?: string,
+    end?: string
+  ): EventStatus => {
+    const now = Date.now()
+    const startTime = start ? new Date(start).getTime() : NaN
+    const endTime = end ? new Date(end).getTime() : NaN
+
+    if (Number.isFinite(startTime) && now < startTime) return "upcoming"
+    if (Number.isFinite(endTime) && now > endTime) return "ended"
+    if (Number.isFinite(startTime) || Number.isFinite(endTime)) return "ongoing"
+    return "upcoming"
+  }
 
   const loadEvents = async () => {
     try {
@@ -85,6 +132,8 @@ export default function Events() {
         id: event.id,
         name: event.name,
         location: event.location,
+        startAt: event.start_at ?? undefined,
+        endAt: event.end_at ?? undefined,
         merch: Array.isArray(event.merch) ? event.merch : [],
         sideEvents: Array.isArray(event.side_events) ? event.side_events : [],
         owner: event.owner_address,
@@ -136,6 +185,8 @@ export default function Events() {
       const payload = {
         name: eventName,
         location,
+        start_at: startAt || null,
+        end_at: endAt || null,
         merch: mainMerch
           .split(",")
           .map((m) => m.trim())
@@ -154,6 +205,8 @@ export default function Events() {
 
     setEventName("")
     setLocation("")
+    setStartAt("")
+    setEndAt("")
     setMainMerch("")
     setSideEvents([])
     setImageFiles([])
@@ -171,6 +224,11 @@ export default function Events() {
   }
 
   /* ================= UI ================= */
+  const selectedStatusStyle = selectedEvent
+    ? STATUS_STYLES[
+        getStatusFromDates(selectedEvent.startAt, selectedEvent.endAt)
+      ]
+    : STATUS_STYLES.upcoming
 
   return (
     <motion.div
@@ -211,43 +269,54 @@ export default function Events() {
 
       {/* EVENTS GRID */}
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {events.map((event) => (
-          <motion.div
-            key={event.id}
-            whileHover={{ y: -4 }}
-            transition={{ duration: 0.18 }}
-            className="group relative rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl hover:shadow-xl hover:shadow-purple-500/10"
-          >
-            {event.imageUrls && event.imageUrls.length > 0 && (
-              <div className="mb-4 overflow-hidden rounded-xl border border-white/10 bg-black/40">
-                <img
-                  src={event.imageUrls[0]}
-                  alt={event.name}
-                  className="h-40 w-full object-contain"
-                  loading="lazy"
-                />
-              </div>
-            )}
-            {isConnected && event.owner === address && (
-              <button
-                onClick={() => deleteEvent(event.id)}
-                className="absolute right-3 top-3 rounded-full bg-black/40 p-1.5 text-xs text-white/70 hover:bg-red-500/20 hover:text-red-400 transition"
-              >
-                ✕
-              </button>
-            )}
+        {events.map((event) => {
+          const statusStyle =
+            STATUS_STYLES[getStatusFromDates(event.startAt, event.endAt)]
 
-            <h2 className="text-xl font-semibold">{event.name}</h2>
-            <p className="mt-1 text-sm text-white/60">{event.location}</p>
-
-            <button
-              onClick={() => setSelectedEvent(event)}
-              className="mt-6 w-full rounded-xl bg-purple-500/10 py-2 text-sm hover:bg-purple-500/20 transition"
+          return (
+            <motion.div
+              key={event.id}
+              whileHover={{ y: -4 }}
+              transition={{ duration: 0.18 }}
+              className="group relative rounded-2xl border border-white/10 bg-white/5 p-6 backdrop-blur-xl hover:shadow-xl hover:shadow-purple-500/10"
             >
-              View Event
-            </button>
-          </motion.div>
-        ))}
+              {event.imageUrls && event.imageUrls.length > 0 && (
+                <div className="mb-4 overflow-hidden rounded-xl border border-white/10 bg-black/40">
+                  <img
+                    src={event.imageUrls[0]}
+                    alt={event.name}
+                    className="h-40 w-full object-contain"
+                    loading="lazy"
+                  />
+                </div>
+              )}
+              {isConnected && event.owner === address && (
+                <button
+                  onClick={() => deleteEvent(event.id)}
+                  className="absolute right-3 top-3 rounded-full bg-black/40 p-1.5 text-xs text-white/70 hover:bg-red-500/20 hover:text-red-400 transition"
+                >
+                  x
+                </button>
+              )}
+
+              <h2 className="text-xl font-semibold">{event.name}</h2>
+              <p className="mt-1 text-sm text-white/60">{event.location}</p>
+              <div
+                className={`mt-3 inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-wide ${statusStyle.className}`}
+              >
+                <span className={`h-2 w-2 rounded-full ${statusStyle.dot}`} />
+                {statusStyle.label}
+              </div>
+
+              <button
+                onClick={() => setSelectedEvent(event)}
+                className="mt-6 w-full rounded-xl bg-purple-500/10 py-2 text-sm hover:bg-purple-500/20 transition"
+              >
+                View Event
+              </button>
+            </motion.div>
+          )
+        })}
       </div>
 
       {/* CREATE EVENT MODAL */}
@@ -279,6 +348,21 @@ export default function Events() {
                 onChange={(e) => setLocation(e.target.value)}
                 className="mb-3 w-full rounded-lg bg-white/5 p-2"
               />
+
+              <div className="mb-3 grid gap-3 sm:grid-cols-2">
+                <input
+                  type="datetime-local"
+                  value={startAt}
+                  onChange={(e) => setStartAt(e.target.value)}
+                  className="w-full rounded-lg bg-white/5 p-2"
+                />
+                <input
+                  type="datetime-local"
+                  value={endAt}
+                  onChange={(e) => setEndAt(e.target.value)}
+                  className="w-full rounded-lg bg-white/5 p-2"
+                />
+              </div>
 
               <input
                 placeholder="Main merch (comma separated)"
@@ -430,6 +514,14 @@ export default function Events() {
                   <p className="mt-1 text-sm text-white/60">
                     {selectedEvent.location}
                   </p>
+                  <div
+                    className={`mt-3 inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[11px] font-semibold uppercase tracking-wide ${selectedStatusStyle.className}`}
+                  >
+                    <span
+                      className={`h-2 w-2 rounded-full ${selectedStatusStyle.dot}`}
+                    />
+                    {selectedStatusStyle.label}
+                  </div>
 
                   <div className="mt-6">
                     <p className="mb-2 text-xs uppercase tracking-wide text-white/40">
