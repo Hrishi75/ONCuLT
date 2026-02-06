@@ -82,6 +82,7 @@ const INITIAL_ITEMS: Item[] = [
     edition: "limited",
     supply: 200,
     owner: "0xB069d15B2E140A09E561Ea99Db5eC85f90f0133d",
+    imageUrls: ["/hoodie.png"],
   },
 ]
 
@@ -543,7 +544,7 @@ export default function Marketplace() {
         <div className="text-center">
           <h1 className="text-4xl font-bold sm:text-5xl md:text-6xl">
             <span className="bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent">
-              Merchstore
+              Marketplace
             </span>
           </h1>
           <p className="mt-3 text-sm text-white/60 sm:text-base">
@@ -594,11 +595,11 @@ export default function Marketplace() {
             )}
 
             {item.imageUrls && item.imageUrls.length > 0 ? (
-              <div className="mb-4 overflow-hidden rounded-xl border border-white/10">
+              <div className="mb-4 overflow-hidden rounded-xl border border-white/10 bg-black/40">
                 <img
                   src={item.imageUrls[0]}
                   alt={item.name}
-                  className="h-40 w-full object-cover"
+                  className="h-40 w-full object-contain"
                   loading="lazy"
                 />
               </div>
@@ -640,257 +641,284 @@ export default function Marketplace() {
           >
             <motion.div
               onClick={(e) => e.stopPropagation()}
-              className="w-full max-w-md rounded-2xl bg-[#0b0b0b] p-6"
+              className="w-full max-w-5xl rounded-2xl bg-[#0b0b0b] p-6"
             >
-              <h2 className="text-xl font-semibold">
-                {selectedItem.name}
-              </h2>
-              <p className="mt-1 text-sm text-white/60">
-                {selectedItem.event}
-              </p>
-
-              <p className="mt-4 text-sm text-white/70">
-                {selectedItem.description}
-              </p>
-              {selectedItem.priceUsdc && (
-                <p className="mt-3 text-sm text-cyan-200/80">
-                  USDC Price: {selectedItem.priceUsdc}
-                </p>
-              )}
-
-              {selectedItem.imageUrls &&
-                selectedItem.imageUrls.length > 0 && (
-                  <div className="mt-6">
-                    <div className="overflow-hidden rounded-xl border border-white/10">
-                      <img
-                        src={selectedItem.imageUrls[0]}
-                        alt={selectedItem.name}
-                        className="h-56 w-full object-cover"
-                        loading="lazy"
-                      />
-                    </div>
-
-                    {selectedItem.imageUrls.length > 1 && (
-                      <div className="mt-3 grid grid-cols-3 gap-3">
-                        {selectedItem.imageUrls.slice(1).map((url) => (
-                          <div
-                            key={url}
-                            className="overflow-hidden rounded-lg border border-white/10"
-                          >
-                            <img
-                              src={url}
-                              alt={`${selectedItem.name} preview`}
-                              className="h-20 w-full object-cover"
-                              loading="lazy"
-                            />
-                          </div>
-                        ))}
+              <div className="flex flex-col gap-6 md:flex-row">
+                <div className="md:w-1/2">
+                  {selectedItem.imageUrls &&
+                  selectedItem.imageUrls.length > 0 ? (
+                    <div>
+                      <div className="overflow-hidden rounded-xl border border-white/10 bg-black/40">
+                        <img
+                          src={selectedItem.imageUrls[0]}
+                          alt={selectedItem.name}
+                          className="h-64 w-full object-contain md:h-80"
+                          loading="lazy"
+                        />
                       </div>
-                    )}
-                  </div>
-                )}
 
-              {selectedItem.edition !== "open" && (
-                <div className="mt-3 rounded-lg border border-purple-500/30 bg-purple-500/10 px-3 py-2 text-sm text-purple-300">
-                  {selectedItem.edition} · {selectedItem.supply} items
+                      {selectedItem.imageUrls.length > 1 && (
+                        <div className="mt-3 grid grid-cols-3 gap-3">
+                          {selectedItem.imageUrls.slice(1).map((url) => (
+                            <div
+                              key={url}
+                              className="overflow-hidden rounded-lg border border-white/10 bg-black/40"
+                            >
+                              <img
+                                src={url}
+                                alt={`${selectedItem.name} preview`}
+                                className="h-20 w-full object-contain"
+                                loading="lazy"
+                              />
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="flex h-64 items-center justify-center rounded-xl border border-white/10 bg-gradient-to-br from-white/5 to-white/0 text-sm text-white/40 md:h-80">
+                      No image available
+                    </div>
+                  )}
                 </div>
-              )}
 
-              <button
-                disabled={selectedItem.owner === address}
-                onClick={async () => {
-                  if (!isConnected || !address) {
-                    toast.error("Please connect your wallet to buy items")
-                    return
-                  }
-                  if (!selectedItem) return
+                <div className="md:w-1/2">
+                  <h2 className="text-xl font-semibold">
+                    {selectedItem.name}
+                  </h2>
+                  <p className="mt-1 text-sm text-white/60">
+                    {selectedItem.event}
+                  </p>
 
-                  const itemName = selectedItem.name
-                  let txHash: `0x${string}` | undefined
-                  let tokenId: string | null = null
-                  let tokenUri: string | undefined
-                    let receiptContract: `0x${string}` | undefined
+                  <p className="mt-4 text-sm text-white/70">
+                    {selectedItem.description}
+                  </p>
+                  {selectedItem.priceUsdc && (
+                    <p className="mt-3 text-sm text-cyan-200/80">
+                      USDC Price: {selectedItem.priceUsdc}
+                    </p>
+                  )}
 
-                  try {
-                    receiptContract = getReceiptContractAddress(chainId)
-                    if (!receiptContract) {
-                      throw new Error("Receipt contract address not set")
-                    }
+                  <div className="mt-4 rounded-lg border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/70">
+                    <p className="text-[11px] uppercase tracking-wide text-white/40">
+                      Shipping
+                    </p>
+                    <ul className="mt-2 space-y-1">
+                      <li>- International shipping available</li>
+                      <li>- Expedited shipping available</li>
+                      <li>- Phone number required for shipping</li>
+                    </ul>
+                  </div>
 
-                    const priceEth = parseEthPrice(selectedItem.price)
-                    const priceWei = toWei(selectedItem.price)
-                    const platformFeePct =
-                      selectedItem.listingType === "organizer" ? 10 : 5
-                    const feeBps = platformFeePct * 100
+                  {selectedItem.edition !== "open" && (
+                    <div className="mt-4 rounded-lg border border-purple-500/30 bg-purple-500/10 px-3 py-2 text-sm text-purple-300">
+                      {selectedItem.edition} - {selectedItem.supply} items
+                    </div>
+                  )}
 
-                    tokenUri = buildTokenUri(selectedItem, address)
-                    const onchainItemId = toOnchainItemId(selectedItem.id)
+                  <button
+                    disabled={selectedItem.owner === address}
+                    onClick={async () => {
+                      if (!isConnected || !address) {
+                        toast.error("Please connect your wallet to buy items")
+                        return
+                      }
+                      if (!selectedItem) return
 
-                    txHash = (await writeContractAsync({
-                      address: receiptContract,
-                      abi: RECEIPT_CONTRACT_ABI,
-                      functionName: "mintReceipt",
-                      value: priceWei,
-                      args: [
-                        address,
-                        onchainItemId,
-                        selectedItem.owner,
-                        priceWei,
-                        feeBps,
-                        tokenUri,
-                      ],
-                    })) as `0x${string}`
+                      const itemName = selectedItem.name
+                      let txHash: `0x${string}` | undefined
+                      let tokenId: string | null = null
+                      let tokenUri: string | undefined
+                      let receiptContract: `0x${string}` | undefined
 
-                    if (!publicClient) {
-                      throw new Error("Public client not available")
-                    }
-
-                    const receipt = await publicClient.waitForTransactionReceipt(
-                      { hash: txHash }
-                    )
-                    const receiptLog = receipt.logs.find((log) => {
                       try {
-                        decodeEventLog({
+                        receiptContract = getReceiptContractAddress(chainId)
+                        if (!receiptContract) {
+                          throw new Error("Receipt contract address not set")
+                        }
+
+                        const priceEth = parseEthPrice(selectedItem.price)
+                        const priceWei = toWei(selectedItem.price)
+                        const platformFeePct =
+                          selectedItem.listingType === "organizer" ? 10 : 5
+                        const feeBps = platformFeePct * 100
+
+                        tokenUri = buildTokenUri(selectedItem, address)
+                        const onchainItemId = toOnchainItemId(selectedItem.id)
+
+                        txHash = (await writeContractAsync({
+                          address: receiptContract,
                           abi: RECEIPT_CONTRACT_ABI,
-                          data: log.data,
-                          topics: log.topics,
+                          functionName: "mintReceipt",
+                          value: priceWei,
+                          args: [
+                            address,
+                            onchainItemId,
+                            selectedItem.owner,
+                            priceWei,
+                            feeBps,
+                            tokenUri,
+                          ],
+                        })) as `0x${string}`
+
+                        if (!publicClient) {
+                          throw new Error("Public client not available")
+                        }
+
+                        const receipt =
+                          await publicClient.waitForTransactionReceipt(
+                            { hash: txHash }
+                          )
+                        const receiptLog = receipt.logs.find((log) => {
+                          try {
+                            decodeEventLog({
+                              abi: RECEIPT_CONTRACT_ABI,
+                              data: log.data,
+                              topics: log.topics,
+                            })
+                            return true
+                          } catch {
+                            return false
+                          }
                         })
-                        return true
-                      } catch {
-                        return false
+
+                        if (receiptLog) {
+                          const decoded = decodeEventLog({
+                            abi: RECEIPT_CONTRACT_ABI,
+                            data: receiptLog.data,
+                            topics: receiptLog.topics,
+                          })
+                          const eventTokenId = decoded.args?.tokenId
+                          if (typeof eventTokenId === "bigint") {
+                            tokenId = eventTokenId.toString()
+                          }
+                        }
+
+                        try {
+                          await createPurchaseDB({
+                            item_id: selectedItem.id,
+                            item_name: selectedItem.name,
+                            price_display: selectedItem.price,
+                            price_eth: priceEth,
+                            listing_type: selectedItem.listingType ?? "artist",
+                            seller_address: selectedItem.owner,
+                            buyer_address: address,
+                            platform_fee_pct: platformFeePct,
+                            tx_hash: txHash,
+                            receipt_contract: receiptContract,
+                            receipt_token_id: tokenId,
+                            receipt_token_uri: tokenUri ?? null,
+                            chain_id: chainId,
+                            chain_name: getChainLabel(chainId),
+                          })
+                        } catch (dbError) {
+                          console.error("Failed to store purchase:", dbError)
+                        }
+                      } catch (error) {
+                        console.error("Failed to create purchase:", error)
+                        return
                       }
-                    })
 
-                    if (receiptLog) {
-                      const decoded = decodeEventLog({
-                        abi: RECEIPT_CONTRACT_ABI,
-                        data: receiptLog.data,
-                        topics: receiptLog.topics,
-                      })
-                      const eventTokenId = decoded.args?.tokenId
-                      if (typeof eventTokenId === "bigint") {
-                        tokenId = eventTokenId.toString()
+                      setSelectedItem(null)
+                      if (txHash) {
+                        navigate("/purchase-success", {
+                          state: {
+                            itemName,
+                            txHash,
+                            receiptContract: receiptContract ?? null,
+                            receiptTokenId: tokenId,
+                            chainId,
+                          },
+                        })
                       }
-                    }
-
-                    try {
-                      await createPurchaseDB({
-                        item_id: selectedItem.id,
-                        item_name: selectedItem.name,
-                        price_display: selectedItem.price,
-                        price_eth: priceEth,
-                        listing_type: selectedItem.listingType ?? "artist",
-                        seller_address: selectedItem.owner,
-                        buyer_address: address,
-                        platform_fee_pct: platformFeePct,
-                        tx_hash: txHash,
-                        receipt_contract: receiptContract,
-                        receipt_token_id: tokenId,
-                        receipt_token_uri: tokenUri ?? null,
-                        chain_id: chainId,
-                        chain_name: getChainLabel(chainId),
-                      })
-                    } catch (dbError) {
-                      console.error("Failed to store purchase:", dbError)
-                    }
-                  } catch (error) {
-                    console.error("Failed to create purchase:", error)
-                    return
-                  }
-
-                  setSelectedItem(null)
-                  if (txHash) {
-                    navigate("/purchase-success", {
-                      state: {
-                        itemName,
-                        txHash,
-                        receiptContract: receiptContract ?? null,
-                        receiptTokenId: tokenId,
-                        chainId,
-                      },
-                    })
-                  }
-                }}
-                className={`mt-6 w-full rounded-xl py-2.5 text-sm font-semibold transition ${
-                  selectedItem.owner === address
-                    ? "bg-white/10 text-white/40 cursor-not-allowed"
-                    : isMinting
-                    ? "bg-purple-500/60 text-white/80 cursor-wait"
-                    : "bg-purple-500 hover:bg-purple-600"
-                }`}
-              >
-                {isMinting ? "Minting..." : "Buy Item"}
-              </button>
-
-              <button
-                onClick={async () => {
-                  if (!selectedItem) return
-                  try {
-                    const result = await handleGatewayPayment(selectedItem)
-                    if (!result?.txHash) return
-
-                    try {
-                      await createPurchaseDB({
-                        item_id: selectedItem.id,
-                        item_name: selectedItem.name,
-                        price_display: selectedItem.priceUsdc
-                          ? `${selectedItem.priceUsdc} USDC`
-                          : "USDC",
-                        price_eth: 0,
-                        listing_type: selectedItem.listingType ?? "artist",
-                        seller_address: selectedItem.owner,
-                        buyer_address: address ?? "",
-                        platform_fee_pct:
-                          selectedItem.listingType === "organizer" ? 10 : 5,
-                        tx_hash: result.txHash,
-                        receipt_tx_hash: result.receiptTxHash ?? null,
-                        receipt_contract: result.receiptContract ?? null,
-                        receipt_token_id: result.receiptTokenId ?? null,
-                        receipt_token_uri: null,
-                        chain_id: result.chainId,
-                        chain_name: getChainLabel(result.chainId),
-                      })
-                    } catch (dbError) {
-                      console.error("Failed to store Gateway purchase:", dbError)
-                    }
-
-                    setSelectedItem(null)
-                    navigate("/purchase-success", {
-                      state: {
-                        itemName: selectedItem.name,
-                        txHash: result.txHash,
-                        receiptTxHash: result.receiptTxHash ?? null,
-                        receiptContract: result.receiptContract ?? null,
-                        receiptTokenId: result.receiptTokenId ?? null,
-                        chainId: result.chainId,
-                      },
-                    })
-                  } catch (error) {
-                    console.error(error)
-                    toast.error("Gateway payment failed")
-                    toast.dismiss("gateway")
-                  }
-                }}
-                className="mt-3 w-full rounded-xl border border-white/20 py-2.5 text-sm hover:bg-white/5 transition"
-              >
-                Pay with USDC (Gateway)
-              </button>
-
-              <div className="mt-3 flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/70">
-                <span>Settle on Arc</span>
-                <button
-                  type="button"
-                  onClick={() => setSettleOnArc((prev) => !prev)}
-                  className={`relative h-6 w-11 rounded-full transition ${
-                    settleOnArc ? "bg-cyan-500/70" : "bg-white/10"
-                  }`}
-                >
-                  <span
-                    className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition ${
-                      settleOnArc ? "left-5" : "left-0.5"
+                    }}
+                    className={`mt-6 w-full rounded-xl py-2.5 text-sm font-semibold transition ${
+                      selectedItem.owner === address
+                        ? "bg-white/10 text-white/40 cursor-not-allowed"
+                        : isMinting
+                        ? "bg-purple-500/60 text-white/80 cursor-wait"
+                        : "bg-purple-500 hover:bg-purple-600"
                     }`}
-                  />
-                </button>
+                  >
+                    {isMinting ? "Minting..." : "Buy Item"}
+                  </button>
+
+                  <button
+                    onClick={async () => {
+                      if (!selectedItem) return
+                      try {
+                        const result = await handleGatewayPayment(selectedItem)
+                        if (!result?.txHash) return
+
+                        try {
+                          await createPurchaseDB({
+                            item_id: selectedItem.id,
+                            item_name: selectedItem.name,
+                            price_display: selectedItem.priceUsdc
+                              ? `${selectedItem.priceUsdc} USDC`
+                              : "USDC",
+                            price_eth: 0,
+                            listing_type: selectedItem.listingType ?? "artist",
+                            seller_address: selectedItem.owner,
+                            buyer_address: address ?? "",
+                            platform_fee_pct:
+                              selectedItem.listingType === "organizer"
+                                ? 10
+                                : 5,
+                            tx_hash: result.txHash,
+                            receipt_tx_hash: result.receiptTxHash ?? null,
+                            receipt_contract: result.receiptContract ?? null,
+                            receipt_token_id: result.receiptTokenId ?? null,
+                            receipt_token_uri: null,
+                            chain_id: result.chainId,
+                            chain_name: getChainLabel(result.chainId),
+                          })
+                        } catch (dbError) {
+                          console.error(
+                            "Failed to store Gateway purchase:",
+                            dbError
+                          )
+                        }
+
+                        setSelectedItem(null)
+                        navigate("/purchase-success", {
+                          state: {
+                            itemName: selectedItem.name,
+                            txHash: result.txHash,
+                            receiptTxHash: result.receiptTxHash ?? null,
+                            receiptContract: result.receiptContract ?? null,
+                            receiptTokenId: result.receiptTokenId ?? null,
+                            chainId: result.chainId,
+                          },
+                        })
+                      } catch (error) {
+                        console.error(error)
+                        toast.error("Gateway payment failed")
+                        toast.dismiss("gateway")
+                      }
+                    }}
+                    className="mt-3 w-full rounded-xl border border-white/20 py-2.5 text-sm hover:bg-white/5 transition"
+                  >
+                    Pay with USDC (Gateway)
+                  </button>
+
+                  <div className="mt-3 flex items-center justify-between rounded-xl border border-white/10 bg-white/5 px-3 py-2 text-xs text-white/70">
+                    <span>Settle on Arc</span>
+                    <button
+                      type="button"
+                      onClick={() => setSettleOnArc((prev) => !prev)}
+                      className={`relative h-6 w-11 rounded-full transition ${
+                        settleOnArc ? "bg-cyan-500/70" : "bg-white/10"
+                      }`}
+                    >
+                      <span
+                        className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition ${
+                          settleOnArc ? "left-5" : "left-0.5"
+                        }`}
+                      />
+                    </button>
+                  </div>
+                </div>
               </div>
 
             </motion.div>
