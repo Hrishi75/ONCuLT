@@ -15,7 +15,7 @@ export default function FloatingNavbar() {
       <div className="relative">
         {/* Main navbar */}
         <div className="rounded-[999px] bg-gradient-to-r from-fuchsia-500/30 via-cyan-400/20 to-emerald-400/30 p-[1px] shadow-[0_0_30px_rgba(168,85,247,0.18)]">
-          <div className="flex items-center gap-4 rounded-[999px] bg-[#0a0a0a]/90 px-6 py-3 backdrop-blur-2xl">
+          <div className="flex items-center gap-6 rounded-[999px] bg-[#0a0a0a]/90 px-8 py-3 backdrop-blur-2xl">
             {/* Logo */}
             <Link to="/" className="text-lg font-semibold tracking-wide">
               <span className="text-white">On</span>
@@ -24,9 +24,9 @@ export default function FloatingNavbar() {
               </span>
             </Link>
 
-          <span className="hidden whitespace-nowrap rounded-full border border-cyan-300/30 bg-cyan-500/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-cyan-200 md:inline">
-            {chainLabel}
-          </span>
+            <span className="hidden whitespace-nowrap rounded-full border border-cyan-300/30 bg-cyan-500/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-cyan-200 md:inline">
+              {chainLabel}
+            </span>
 
             {/* Desktop nav */}
             <nav className="hidden md:flex gap-5 text-sm text-white/70">
