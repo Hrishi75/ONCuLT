@@ -243,7 +243,7 @@ export default function Events() {
 
         <div className="text-center">
           <h1 className="text-4xl font-bold sm:text-5xl md:text-6xl">
-            <span className="bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-fuchsia-400 via-purple-400 to-cyan-300 bg-clip-text text-transparent">
               Events
             </span>
           </h1>

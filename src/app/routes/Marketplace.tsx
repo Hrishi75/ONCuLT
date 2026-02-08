@@ -306,13 +306,13 @@ export default function Marketplace() {
     const feeIntent =
       feeAmount > 0n
         ? buildBurnIntent({
-            sourceChainId,
-            destinationChainId,
+          sourceChainId,
+          destinationChainId,
           depositor,
           recipient: PLATFORM_FEE_ADDRESS,
-            amountUsdc: feeAmount,
-            salt: createSalt(),
-          })
+          amountUsdc: feeAmount,
+          salt: createSalt(),
+        })
         : null
     const feeIntentForApi = feeIntent
       ? serializeBurnIntent(feeIntent)
@@ -328,11 +328,11 @@ export default function Marketplace() {
     const feeSig =
       feeIntent
         ? await signTypedDataAsync({
-            domain: gatewayTypedData.domain,
-            types: gatewayTypedData.types,
-            primaryType: "BurnIntent",
-            message: feeIntent,
-          })
+          domain: gatewayTypedData.domain,
+          types: gatewayTypedData.types,
+          primaryType: "BurnIntent",
+          message: feeIntent,
+        })
         : null
 
     toast.loading("Calling Gateway...", { id: "gateway" })
@@ -344,16 +344,16 @@ export default function Marketplace() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
         },
-          body: JSON.stringify(
-            [
-              { burnIntent: sellerIntentForApi, signature: sellerSig },
-              ...(feeIntentForApi && feeSig
-                ? [{ burnIntent: feeIntentForApi, signature: feeSig }]
-                : []),
-            ]
-          ),
-        }
-      )
+        body: JSON.stringify(
+          [
+            { burnIntent: sellerIntentForApi, signature: sellerSig },
+            ...(feeIntentForApi && feeSig
+              ? [{ burnIntent: feeIntentForApi, signature: feeSig }]
+              : []),
+          ]
+        ),
+      }
+    )
 
     if (!resp.ok) {
       const err = await resp.text()
@@ -543,7 +543,7 @@ export default function Marketplace() {
 
         <div className="text-center">
           <h1 className="text-4xl font-bold sm:text-5xl md:text-6xl">
-            <span className="bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent">
+            <span className="bg-gradient-to-r from-fuchsia-400 via-purple-400 to-cyan-300 bg-clip-text text-transparent">
               Marketplace
             </span>
           </h1>
@@ -556,11 +556,10 @@ export default function Marketplace() {
           <button
             disabled={!isConnected}
             onClick={() => setCreateOpen(true)}
-            className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${
-              isConnected
-                ? "bg-purple-500 hover:bg-purple-600"
-                : "cursor-not-allowed bg-white/10 text-white/40"
-            }`}
+            className={`rounded-xl px-4 py-2 text-sm font-semibold transition ${isConnected
+              ? "bg-purple-500 hover:bg-purple-600"
+              : "cursor-not-allowed bg-white/10 text-white/40"
+              }`}
           >
             + List Item
           </button>
@@ -646,7 +645,7 @@ export default function Marketplace() {
               <div className="flex flex-col gap-6 md:flex-row">
                 <div className="md:w-1/2">
                   {selectedItem.imageUrls &&
-                  selectedItem.imageUrls.length > 0 ? (
+                    selectedItem.imageUrls.length > 0 ? (
                     <div>
                       <div className="overflow-hidden rounded-xl border border-white/10 bg-black/40">
                         <img
@@ -832,13 +831,12 @@ export default function Marketplace() {
                         })
                       }
                     }}
-                    className={`mt-6 w-full rounded-xl py-2.5 text-sm font-semibold transition ${
-                      selectedItem.owner === address
-                        ? "bg-white/10 text-white/40 cursor-not-allowed"
-                        : isMinting
+                    className={`mt-6 w-full rounded-xl py-2.5 text-sm font-semibold transition ${selectedItem.owner === address
+                      ? "bg-white/10 text-white/40 cursor-not-allowed"
+                      : isMinting
                         ? "bg-purple-500/60 text-white/80 cursor-wait"
                         : "bg-purple-500 hover:bg-purple-600"
-                    }`}
+                      }`}
                   >
                     {isMinting ? "Minting..." : "Buy Item"}
                   </button>
@@ -907,14 +905,12 @@ export default function Marketplace() {
                     <button
                       type="button"
                       onClick={() => setSettleOnArc((prev) => !prev)}
-                      className={`relative h-6 w-11 rounded-full transition ${
-                        settleOnArc ? "bg-cyan-500/70" : "bg-white/10"
-                      }`}
+                      className={`relative h-6 w-11 rounded-full transition ${settleOnArc ? "bg-cyan-500/70" : "bg-white/10"
+                        }`}
                     >
                       <span
-                        className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition ${
-                          settleOnArc ? "left-5" : "left-0.5"
-                        }`}
+                        className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition ${settleOnArc ? "left-5" : "left-0.5"
+                          }`}
                       />
                     </button>
                   </div>
@@ -982,27 +978,24 @@ export default function Marketplace() {
                   <motion.div
                     layout
                     transition={{ type: "tween", duration: 0.2, ease: "easeOut" }}
-                    className={`absolute top-1 bottom-1 w-1/2 rounded-lg bg-purple-500 ${
-                      listingType === "artist" ? "left-1" : "left-1/2"
-                    }`}
+                    className={`absolute top-1 bottom-1 w-1/2 rounded-lg bg-purple-500 ${listingType === "artist" ? "left-1" : "left-1/2"
+                      }`}
                   />
                   <button
                     type="button"
                     onClick={() => setListingType("artist")}
-                    className={`relative z-10 w-1/2 rounded-lg py-2 text-sm font-medium ${
-                      listingType === "artist" ? "text-white" : "text-white/60"
-                    }`}
+                    className={`relative z-10 w-1/2 rounded-lg py-2 text-sm font-medium ${listingType === "artist" ? "text-white" : "text-white/60"
+                      }`}
                   >
                     Artist / Creator
                   </button>
                   <button
                     type="button"
                     onClick={() => setListingType("organizer")}
-                    className={`relative z-10 w-1/2 rounded-lg py-2 text-sm font-medium ${
-                      listingType === "organizer"
-                        ? "text-white"
-                        : "text-white/60"
-                    }`}
+                    className={`relative z-10 w-1/2 rounded-lg py-2 text-sm font-medium ${listingType === "organizer"
+                      ? "text-white"
+                      : "text-white/60"
+                      }`}
                   >
                     Event Organizer
                   </button>
@@ -1043,21 +1036,19 @@ export default function Marketplace() {
                   <motion.div
                     layout
                     transition={{ type: "tween", duration: 0.2, ease: "easeOut" }}
-                    className={`absolute top-1 bottom-1 w-1/3 rounded-lg bg-purple-500 ${
-                      edition === "open"
-                        ? "left-1"
-                        : edition === "limited"
+                    className={`absolute top-1 bottom-1 w-1/3 rounded-lg bg-purple-500 ${edition === "open"
+                      ? "left-1"
+                      : edition === "limited"
                         ? "left-1/3"
                         : "left-2/3"
-                    }`}
+                      }`}
                   />
 
                   <button
                     type="button"
                     onClick={() => setEdition("open")}
-                    className={`relative z-10 w-1/3 rounded-lg py-2 text-sm font-medium ${
-                      edition === "open" ? "text-white" : "text-white/60"
-                    }`}
+                    className={`relative z-10 w-1/3 rounded-lg py-2 text-sm font-medium ${edition === "open" ? "text-white" : "text-white/60"
+                      }`}
                   >
                     Open
                   </button>
@@ -1065,9 +1056,8 @@ export default function Marketplace() {
                   <button
                     type="button"
                     onClick={() => setEdition("limited")}
-                    className={`relative z-10 w-1/3 rounded-lg py-2 text-sm font-medium ${
-                      edition === "limited" ? "text-white" : "text-white/60"
-                    }`}
+                    className={`relative z-10 w-1/3 rounded-lg py-2 text-sm font-medium ${edition === "limited" ? "text-white" : "text-white/60"
+                      }`}
                   >
                     Limited
                   </button>
@@ -1075,11 +1065,10 @@ export default function Marketplace() {
                   <button
                     type="button"
                     onClick={() => setEdition("extra-limited")}
-                    className={`relative z-10 w-1/3 rounded-lg py-2 text-sm font-medium ${
-                      edition === "extra-limited"
-                        ? "text-white"
-                        : "text-white/60"
-                    }`}
+                    className={`relative z-10 w-1/3 rounded-lg py-2 text-sm font-medium ${edition === "extra-limited"
+                      ? "text-white"
+                      : "text-white/60"
+                      }`}
                   >
                     Extra
                   </button>

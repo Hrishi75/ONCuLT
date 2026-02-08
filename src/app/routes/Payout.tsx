@@ -125,7 +125,7 @@ export default function Payout() {
         className="mb-16 text-center"
       >
         <h1 className="text-4xl font-bold sm:text-5xl">
-          <span className="bg-gradient-to-r from-purple-400 to-pink-500 bg-clip-text text-transparent">
+          <span className="bg-gradient-to-r from-fuchsia-400 via-purple-400 to-cyan-300 bg-clip-text text-transparent">
             Payouts
           </span>
         </h1>
@@ -244,8 +244,8 @@ export default function Payout() {
                         <a
                           href={`${getExplorerBase(
                             p.chain_id ??
-                              getChainIdForReceiptContract(p.receipt_contract) ??
-                              chainId
+                            getChainIdForReceiptContract(p.receipt_contract) ??
+                            chainId
                           )}/tx/${p.tx_hash}`}
                           target="_blank"
                           rel="noreferrer"
@@ -254,8 +254,8 @@ export default function Payout() {
                           View on{" "}
                           {getExplorerName(
                             p.chain_id ??
-                              getChainIdForReceiptContract(p.receipt_contract) ??
-                              chainId
+                            getChainIdForReceiptContract(p.receipt_contract) ??
+                            chainId
                           )}
                         </a>
                       )}
@@ -263,8 +263,8 @@ export default function Payout() {
                         <a
                           href={`${getExplorerBase(
                             p.chain_id ??
-                              getChainIdForReceiptContract(p.receipt_contract) ??
-                              chainId
+                            getChainIdForReceiptContract(p.receipt_contract) ??
+                            chainId
                           )}/token/${p.receipt_contract}?a=${p.receipt_token_id}`}
                           target="_blank"
                           rel="noreferrer"
@@ -277,8 +277,8 @@ export default function Payout() {
                         <a
                           href={`${getExplorerBase(
                             p.chain_id ??
-                              getChainIdForReceiptContract(p.receipt_contract) ??
-                              chainId
+                            getChainIdForReceiptContract(p.receipt_contract) ??
+                            chainId
                           )}/tx/${p.receipt_tx_hash}`}
                           target="_blank"
                           rel="noreferrer"
